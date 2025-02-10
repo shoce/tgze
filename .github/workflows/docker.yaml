@@ -61,4 +61,11 @@ jobs:
           git tag $VERSION
           git push origin $VERSION
 
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.event.repository.name }}/${{ github.ref_name }}
+          package-type: container
+          min-versions-to-keep: 3
+          delete-only-untagged-versions: "false"
+
 
