@@ -5,6 +5,7 @@ kind: StatefulSet
 
 metadata:
   name: tgze
+  namespace: {{ $.Release.Namespace }}
   labels:
     app: tgze
 

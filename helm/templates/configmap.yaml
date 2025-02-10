@@ -3,6 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: tgze
+  namespace: {{ $.Release.Namespace }}
 
 data:
 
