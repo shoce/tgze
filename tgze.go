@@ -1,8 +1,6 @@
 /*
 
 https://pkg.go.dev/github.com/kkdai/youtube/v2/
-https://core.telegram.org/bots/api/
-
 
 go get github.com/kkdai/youtube/v2@master
 
@@ -20,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
@@ -31,11 +28,12 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"unicode"
 
 	ytdl "github.com/kkdai/youtube/v2"
 	"golang.org/x/exp/slices"
 	yaml "gopkg.in/yaml.v3"
+
+	"github.com/shoce/tg"
 )
 
 const (
@@ -146,6 +144,8 @@ func init() {
 		os.Exit(1)
 	}
 
+	tg.ApiToken = Config.TgToken
+
 	log("TgUpdateLog==%+v", Config.TgUpdateLog)
 
 	if Config.TgCommandChannels == "" {
@@ -172,7 +172,10 @@ func main() {
 	signal.Notify(sigterm, syscall.SIGTERM)
 	go func(sigterm chan os.Signal) {
 		<-sigterm
-		tgsendMessage(fmt.Sprintf("%s: sigterm", os.Args[0]), Config.TgZeChatId, "", 0)
+		tg.SendMessage(tg.SendMessageRequest{
+			ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
+			Text:   fmt.Sprintf("%s: sigterm", os.Args[0]),
+		})
 		log("sigterm received")
 		os.Exit(1)
 	}(sigterm)
@@ -206,11 +209,6 @@ func ts() string {
 func log(msg string, args ...interface{}) {
 	s := fmt.Sprintf("%s %s", ts(), msg) + NL
 	fmt.Fprintf(os.Stderr, s, args...)
-}
-
-type TgChatMessageId struct {
-	ChatId    int64
-	MessageId int64
 }
 
 type YtChannel struct {
@@ -308,127 +306,6 @@ type YtPlaylistItems struct {
 	Items []YtPlaylistItem
 }
 
-type TgResponse struct {
-	Ok          bool       `json:"ok"`
-	Description string     `json:"description"`
-	Result      *TgMessage `json:"result"`
-}
-
-type TgResponseShort struct {
-	Ok          bool   `json:"ok"`
-	Description string `json:"description"`
-}
-
-type TgPromoteChatMemberResponse struct {
-	Ok          bool   `json:"ok"`
-	Description string `json:"description"`
-	Result      bool   `json:"result"`
-}
-
-type TgPhotoSize struct {
-	FileId       string `json:"file_id"`
-	FileUniqueId string `json:"file_unique_id"`
-	Width        int64  `json:"width"`
-	Height       int64  `json:"height"`
-	FileSize     int64  `json:"file_size"`
-}
-
-type TgAudio struct {
-	FileId       string      `json:"file_id"`
-	FileUniqueId string      `json:"file_unique_id"`
-	Duration     int64       `json:"duration"`
-	Performer    string      `json:"performer"`
-	Title        string      `json:"title"`
-	MimeType     string      `json:"mime_type"`
-	FileSize     int64       `json:"file_size"`
-	Thumb        TgPhotoSize `json:"thumb"`
-}
-
-type TgVideo struct {
-	FileId       string      `json:"file_id"`
-	FileUniqueId string      `json:"file_unique_id"`
-	Width        int64       `json:"width"`
-	Height       int64       `json:"height"`
-	Duration     int64       `json:"duration"`
-	MimeType     string      `json:"mime_type"`
-	FileSize     int64       `json:"file_size"`
-	Thumb        TgPhotoSize `json:"thumb"`
-}
-
-type TgMessage struct {
-	MessageId int64  `json:"message_id"`
-	From      TgUser `json:"from"`
-	Chat      TgChat `json:"chat"`
-	Text      string
-	Audio     TgAudio       `json:"audio"`
-	Photo     []TgPhotoSize `json:"photo"`
-	Video     TgVideo       `json:"video"`
-}
-
-type TgUser struct {
-	Id        int64  `json:"id"`
-	IsBot     bool   `json:"is_bot"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Username  string `json:"username"`
-}
-
-type TgChat struct {
-	Id         int64  `json:"id"`
-	Type       string `json:"type"`
-	Title      string `json:"title"`
-	Username   string `json:"username"`
-	FirstName  string `json:"first_name"`
-	LastName   string `json:"last_name"`
-	InviteLink string `json:"invite_link"`
-}
-
-type TgGetUpdatesResponse struct {
-	Ok          bool       `json:"ok"`
-	Description string     `json:"description"`
-	Result      []TgUpdate `json:"result"`
-}
-
-type TgChatMemberUpdated struct {
-	Chat                    TgChat       `json:"chat"`
-	From                    TgUser       `json:"from"`
-	Date                    int64        `json:"date"`
-	OldChatMember           TgChatMember `json:"old_chat_member"`
-	NewChatMember           TgChatMember `json:"new_chat_member"`
-	ViaJoinRequest          bool         `json:"via_join_request"`
-	ViaChatFolderInviteLink bool         `json:"via_chat_folder_invite_link"`
-}
-
-type TgUpdate struct {
-	UpdateId            int64               `json:"update_id"`
-	Message             TgMessage           `json:"message"`
-	EditedMessage       TgMessage           `json:"edited_message"`
-	ChannelPost         TgMessage           `json:"channel_post"`
-	EditedChannelPost   TgMessage           `json:"edited_channel_post"`
-	MyChatMemberUpdated TgChatMemberUpdated `json:"my_chat_member"`
-}
-
-type TgGetChatResponse struct {
-	Ok          bool   `json:"ok"`
-	Description string `json:"description"`
-	Result      TgChat `json:"result"`
-}
-
-type TgChatMember struct {
-	User   TgUser `json:"user"`
-	Status string `json:"status"`
-}
-
-type TgGetChatAdministratorsRequest struct {
-	ChatId string `json:"chat_id"`
-}
-
-type TgGetChatAdministratorsResponse struct {
-	Ok          bool           `json:"ok"`
-	Description string         `json:"description"`
-	Result      []TgChatMember `json:"result"`
-}
-
 type YtVideo struct {
 	Id            string
 	PlaylistId    string
@@ -475,169 +352,33 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 	return nil
 }
 
-func postJson(url string, data *bytes.Buffer, target interface{}) error {
-	resp, err := HttpClient.Post(
-		url,
-		"application/json",
-		data,
-	)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	var respBody []byte
-	respBody, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("io.ReadAll: %w", err)
-	}
-
-	err = json.NewDecoder(bytes.NewBuffer(respBody)).Decode(target)
-	if err != nil {
-		return fmt.Errorf("Decode: %w", err)
-	}
-
-	return nil
-}
-
-func tgescape(text string) string {
-	// https://core.telegram.org/bots/api#markdownv2-style
-	return strings.NewReplacer(
-		"`", "\\`",
-		".", "\\.",
-		"-", "\\-",
-		"_", "\\_",
-		"#", "\\#",
-		"*", "\\*",
-		"~", "\\~",
-		">", "\\>",
-		"+", "\\+",
-		"=", "\\=",
-		"|", "\\|",
-		"!", "\\!",
-		"{", "\\{",
-		"}", "\\}",
-		"[", "\\[",
-		"]", "\\]",
-		"(", "\\(",
-		")", "\\)",
-	).Replace(text)
-}
-
-func tggetUpdates() (uu []TgUpdate, tgrespjson string, err error) {
-	var offset int64
-	if len(Config.TgUpdateLog) > 0 {
-		offset = Config.TgUpdateLog[len(Config.TgUpdateLog)-1] + 1
-	}
-	getUpdatesUrl := fmt.Sprintf("%s/bot%s/getUpdates?offset=%d", Config.TgApiUrlBase, Config.TgToken, offset)
-
-	var tgResp TgGetUpdatesResponse
-	err = getJson(getUpdatesUrl, &tgResp, &tgrespjson)
-	if err != nil {
-		return nil, "", err
-	}
-	if !tgResp.Ok {
-		return nil, "", fmt.Errorf("Tg response not ok: %s", tgResp.Description)
-	}
-
-	return tgResp.Result, tgrespjson, nil
-}
-
-func tggetChat(chatid int64) (chat TgChat, err error) {
-	getChatUrl := fmt.Sprintf("%s/bot%s/getChat?chat_id=%d", Config.TgApiUrlBase, Config.TgToken, chatid)
-	var tgResp TgGetChatResponse
-
-	tries := []int{1, 2, 3}
-	for ti, _ := range tries {
-		err = getJson(getChatUrl, &tgResp, nil)
-		if err != nil {
-			return TgChat{}, err
-		}
-		if !tgResp.Ok {
-			if strings.HasPrefix(tgResp.Description, "Too Many Requests: retry after ") && ti < len(tries)-1 {
-				log("tggetChat %d: Tg: %s: sleeping 17 seconds", chatid, tgResp.Description)
-				time.Sleep(17 * time.Second)
-				continue
-			}
-			return TgChat{}, fmt.Errorf("Tg response not ok: %s", tgResp.Description)
-		}
-	}
-
-	return tgResp.Result, nil
-}
-
-func tgpromoteChatMember(chatid, userid int64) (bool, error) {
-	// https://core.telegram.org/bots/api#promotechatmember
-	promoteChatMember := map[string]interface{}{
-		"chat_id":                chatid,
-		"user_id":                userid,
-		"is_anonymous":           false,
-		"can_manage_chat":        true,
-		"can_post_messages":      true,
-		"can_edit_messages":      true,
-		"can_delete_messages":    true,
-		"can_change_info":        true,
-		"can_restrict_members":   true,
-		"can_promote_members":    true,
-		"can_invite_users":       true,
-		"can_manage_voice_chats": true,
-	}
-	promoteChatMemberJSON, err := json.Marshal(promoteChatMember)
-	if err != nil {
-		return false, err
-	}
-
-	var tgresp TgPromoteChatMemberResponse
-	err = postJson(
-		fmt.Sprintf("%s/bot%s/promoteChatMember", Config.TgApiUrlBase, Config.TgToken),
-		bytes.NewBuffer(promoteChatMemberJSON),
-		&tgresp,
-	)
-	if err != nil {
-		return false, fmt.Errorf("postJson: %w", err)
-	}
-
-	if !tgresp.Ok {
-		return false, fmt.Errorf("%s", tgresp.Description)
-	}
-
-	return tgresp.Result, nil
-}
-
-func tggetChatAdministrators(chatid int64) (mm []TgChatMember, err error) {
-	getChatAdministratorsUrl := fmt.Sprintf("%s/bot%s/getChatAdministrators?chat_id=%d", Config.TgApiUrlBase, Config.TgToken, chatid)
-	var tgResp TgGetChatAdministratorsResponse
-
-	err = getJson(getChatAdministratorsUrl, &tgResp, nil)
-	if err != nil {
-		return nil, err
-	}
-	if !tgResp.Ok {
-		return nil, fmt.Errorf("Tg response not ok: %s", tgResp.Description)
-	}
-
-	return tgResp.Result, nil
-}
-
 func processTgUpdates() {
 	var err error
 
-	var tgdeleteMessages []TgChatMessageId
-	defer func(mm *[]TgChatMessageId) {
+	var tgdeleteMessages []tg.DeleteMessageRequest
+	defer func(mm *[]tg.DeleteMessageRequest) {
 		for _, cm := range *mm {
-			tgdeleteMessage(cm.ChatId, cm.MessageId)
+			tg.DeleteMessage(tg.DeleteMessageRequest{
+				ChatId:    cm.ChatId,
+				MessageId: cm.MessageId,
+			})
 		}
 	}(&tgdeleteMessages)
 
-	var uu []TgUpdate
+	var updatesoffset int64
+	if len(Config.TgUpdateLog) > 0 {
+		updatesoffset = Config.TgUpdateLog[len(Config.TgUpdateLog)-1] + 1
+	}
+
+	var uu []tg.Update
 	var respjson string
-	uu, respjson, err = tggetUpdates()
+	uu, respjson, err = tg.GetUpdates(updatesoffset)
 	if err != nil {
-		log("tggetUpdates: %v", err)
+		log("tg.GetUpdates: %v", err)
 		os.Exit(1)
 	}
 
-	var m, prevm TgMessage
+	var m, prevm tg.Message
 	for _, u := range uu {
 
 		log("# UpdateId:%d ", u.UpdateId)
@@ -698,19 +439,25 @@ func processTgUpdates() {
 					SPAC+"status: %s"+NL+
 					"",
 				cmu.From.Username, cmu.From.Id,
-				cmu.Chat.Id, cmu.Chat.Username, cmu.Chat.Type, tgescape(cmu.Chat.Title),
+				cmu.Chat.Id, cmu.Chat.Username, cmu.Chat.Type, tg.Esc(cmu.Chat.Title),
 				cmu.OldChatMember.User.Username, cmu.OldChatMember.User.Id, cmu.OldChatMember.Status,
 				cmu.NewChatMember.User.Username, cmu.NewChatMember.User.Id, cmu.NewChatMember.Status,
 			)
-			_, err = tgsendMessage(report, Config.TgZeChatId, "MarkdownV2", 0)
+			_, err = tg.SendMessage(tg.SendMessageRequest{
+				ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
+				Text:   report,
+			})
 			if err != nil {
-				log("tgsendMessage: %v", err)
+				log("tg.SendMessage: %v", err)
 			}
 		} else {
 			log("WARNING unsupported type of update id:%d received:"+NL+"%s", u.UpdateId, respjson)
-			_, err = tgsendMessage(fmt.Sprintf("unsupported type of update (id:%d) received:"+NL+"```"+NL+"%s"+NL+"```", u.UpdateId, respjson), Config.TgZeChatId, "MarkdownV2", 0)
+			_, err = tg.SendMessage(tg.SendMessageRequest{
+				ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
+				Text:   fmt.Sprintf("unsupported type of update (id:%d) received:"+NL+"```"+NL+"%s"+NL+"```", u.UpdateId, respjson),
+			})
 			if err != nil {
-				log("WARNING tgsendMessage: %v", err)
+				log("WARNING tg.SendMessage: %v", err)
 				continue
 			}
 			continue
@@ -746,7 +493,7 @@ func processTgUpdates() {
 			shouldreport = false
 		}
 		var chatadmins string
-		if aa, err := tggetChatAdministrators(m.Chat.Id); err == nil {
+		if aa, err := tg.GetChatAdministrators(m.Chat.Id); err == nil {
 			for _, a := range aa {
 				chatadmins += fmt.Sprintf("username:@%s id:%d status:%s  ", a.User.Username, a.User.Id, a.Status)
 				if a.User.Id == Config.TgZeChatId {
@@ -757,36 +504,40 @@ func processTgUpdates() {
 			log("tggetChatAdministrators: %v", err)
 		}
 		if shouldreport && m.MessageId != 0 {
-			report := fmt.Sprintf(
-				"*Message*"+NL+
-					"from: username:@%s id:`%d`"+NL+
-					"chat: username:@%s id:%d type:%s title:%s"+NL+
-					"chat admins: %s"+NL+
-					"iseditmessage:%v"+NL+
-					"text:"+NL+
-					"```"+NL+
-					"%s"+NL+
-					"```",
-				m.From.Username, m.From.Id,
-				m.Chat.Id, m.Chat.Username, m.Chat.Type, tgescape(m.Chat.Title),
-				chatadmins,
-				iseditmessage,
-				m.Text,
-			)
-			_, err = tgsendMessage(report, Config.TgZeChatId, "MarkdownV2", 0)
+			_, err = tg.SendMessage(tg.SendMessageRequest{
+				ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
+				Text: fmt.Sprintf(
+					"*Message*"+NL+
+						"from: username:@%s id:`%d`"+NL+
+						"chat: username:@%s id:%d type:%s title:%s"+NL+
+						"chat admins: %s"+NL+
+						"iseditmessage:%v"+NL+
+						"text:"+NL+
+						"```"+NL+
+						"%s"+NL+
+						"```",
+					m.From.Username, m.From.Id,
+					m.Chat.Id, m.Chat.Username, m.Chat.Type, tg.Esc(m.Chat.Title),
+					chatadmins,
+					iseditmessage,
+					m.Text,
+				),
+			})
 			if err != nil {
-				log("tgsendMessage: %v", err)
+				log("tg.SendMessage: %v", err)
 				continue
 			}
 		}
 
 		if strings.TrimSpace(m.Text) == "/id" {
-			_, err = tgsendMessage(
-				fmt.Sprintf("username `%s`"+NL+"user id `%d`"+NL+"chat id `%d`", m.From.Username, m.From.Id, m.Chat.Id),
-				m.Chat.Id, "MarkdownV2", m.MessageId,
+			_, err = tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           strconv.FormatInt(m.Chat.Id, 10),
+				ReplyToMessageId: m.MessageId,
+				Text:             fmt.Sprintf("username `%s`"+NL+"user id `%d`"+NL+"chat id `%d`", m.From.Username, m.From.Id, m.Chat.Id),
+			},
 			)
 			if err != nil {
-				log("tgsendMessage: %v", err)
+				log("tg.SendMessage: %v", err)
 			}
 		}
 
@@ -795,16 +546,19 @@ func processTgUpdates() {
 			totalchannels = len(Config.TgAllChannelsChatIds)
 			for _, i := range Config.TgAllChannelsChatIds {
 				var err error
-				c, getChatErr := tggetChat(i)
+				c, getChatErr := tg.GetChat(i)
 				if getChatErr != nil {
 					if strings.Contains(getChatErr.Error(), "Bad Request: chat not found") {
 						// Remove the channel
 						removedchannels += 1
 						continue
 					}
-					_, err = tgsendMessage(fmt.Sprintf("id:%d err:%v", i, getChatErr), m.Chat.Id, "", 0)
+					_, err = tg.SendMessage(tg.SendMessageRequest{
+						ChatId: strconv.FormatInt(m.Chat.Id, 10),
+						Text:   fmt.Sprintf("id:%d err:%v", i, getChatErr),
+					})
 					if err != nil {
-						log("tgsendMessage: %v", err)
+						log("tg.SendMessage: %v", err)
 					}
 					continue
 				}
@@ -814,25 +568,32 @@ func processTgUpdates() {
 				} else if c.InviteLink != "" {
 					chatinfo += " " + c.InviteLink
 				}
-				_, err = tgsendMessage(chatinfo, m.Chat.Id, "", 0)
+				_, err = tg.SendMessage(tg.SendMessageRequest{
+					ChatId: strconv.FormatInt(m.Chat.Id, 10),
+					Text:   chatinfo,
+				})
 				if err != nil {
-					log("tgsendMessage: %v", err)
+					log("tg.SendMessage: %v", err)
 				}
 			}
 			totalmessage := fmt.Sprintf("Total %d channels.", totalchannels)
 			if removedchannels > 0 {
 				totalmessage += NL + fmt.Sprintf("Removed %d channels.", removedchannels)
 			}
-			_, err = tgsendMessage(totalmessage, m.Chat.Id, "", m.MessageId)
+			_, err = tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           strconv.FormatInt(m.Chat.Id, 10),
+				ReplyToMessageId: m.MessageId,
+				Text:             totalmessage,
+			})
 			if err != nil {
-				log("tgsendMessage: %v", err)
+				log("tg.SendMessage: %v", err)
 			}
 		}
 
 		if strings.TrimSpace(m.Text) == Config.TgCommandChannelsPromoteAdmin {
 			var total, totalok int
 			for _, i := range Config.TgAllChannelsChatIds {
-				success, err := tgpromoteChatMember(i, m.From.Id)
+				success, err := tg.PromoteChatMember(strconv.FormatInt(i, 10), strconv.FormatInt(m.From.Id, 10))
 				total++
 				if success != true || err != nil {
 					log("tgpromoteChatMember %d %d: %v", i, m.From.Id, err)
@@ -841,28 +602,41 @@ func processTgUpdates() {
 					log("tgpromoteChatMember %d %d: ok", i, m.From.Id)
 				}
 			}
-			_, err = tgsendMessage(fmt.Sprintf("ok for %d of total %d channels.", totalok, total), m.Chat.Id, "", m.MessageId)
+			_, err = tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           strconv.FormatInt(m.Chat.Id, 10),
+				ReplyToMessageId: m.MessageId,
+				Text:             fmt.Sprintf("ok for %d of total %d channels.", totalok, total),
+			})
 			if err != nil {
-				log("tgsendMessage: %v", err)
+				log("tg.SendMessage: %v", err)
 			}
 		}
 
 		if strings.TrimSpace(m.Text) == Config.TgQuest1 {
-			_, err = tgsendMessage(Config.TgQuest1Key, m.Chat.Id, "", 0)
+			_, err = tg.SendMessage(tg.SendMessageRequest{
+				ChatId: strconv.FormatInt(m.Chat.Id, 10),
+				Text:   Config.TgQuest1Key,
+			})
 			if err != nil {
-				log("tgsendMessage: %v", err)
+				log("tg.SendMessage: %v", err)
 			}
 		}
 		if strings.TrimSpace(m.Text) == Config.TgQuest2 {
-			_, err = tgsendMessage(Config.TgQuest2Key, m.Chat.Id, "", 0)
+			_, err = tg.SendMessage(tg.SendMessageRequest{
+				ChatId: strconv.FormatInt(m.Chat.Id, 10),
+				Text:   Config.TgQuest2Key,
+			})
 			if err != nil {
-				log("tgsendMessage: %v", err)
+				log("tg.SendMessage: %v", err)
 			}
 		}
 		if strings.TrimSpace(m.Text) == Config.TgQuest3 {
-			_, err = tgsendMessage(Config.TgQuest3Key, m.Chat.Id, "", 0)
+			_, err = tg.SendMessage(tg.SendMessageRequest{
+				ChatId: strconv.FormatInt(m.Chat.Id, 10),
+				Text:   Config.TgQuest3Key,
+			})
 			if err != nil {
-				log("tgsendMessage: %v", err)
+				log("tg.SendMessage: %v", err)
 			}
 		}
 
@@ -920,15 +694,22 @@ func processTgUpdates() {
 			if postingerr == nil {
 				if ischannelpost {
 					// TODO do not delete if playlist
-					err = tgdeleteMessage(m.Chat.Id, m.MessageId)
+					err = tg.DeleteMessage(tg.DeleteMessageRequest{
+						ChatId:    strconv.FormatInt(m.Chat.Id, 10),
+						MessageId: m.MessageId,
+					})
 					if err != nil {
-						log("tgdeleteMessage: %v", err)
+						log("tg.DeleteMessage: %v", err)
 					}
 				}
 			} else {
-				_, err = tgsendMessage(fmt.Sprintf("ERROR %v", postingerr), m.Chat.Id, "", m.MessageId)
+				_, err = tg.SendMessage(tg.SendMessageRequest{
+					ChatId:           strconv.FormatInt(m.Chat.Id, 10),
+					ReplyToMessageId: m.MessageId,
+					Text:             fmt.Sprintf("ERROR %v", postingerr),
+				})
 				if err != nil {
-					log("tgsendMessage: %v", err)
+					log("tg.SendMessage: %v", err)
 				}
 			}
 
@@ -938,13 +719,13 @@ func processTgUpdates() {
 	return
 }
 
-func postVideo(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
+func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	var videoFormat, videoSmallestFormat ytdl.Format
 
-	var tgdeleteMessages []TgChatMessageId
-	defer func(mm *[]TgChatMessageId) {
-		for _, cm := range *mm {
-			tgdeleteMessage(cm.ChatId, cm.MessageId)
+	var tgdeleteMessages []tg.DeleteMessageRequest
+	defer func(mm *[]tg.DeleteMessageRequest) {
+		for _, dmr := range *mm {
+			tg.DeleteMessage(dmr)
 		}
 	}(&tgdeleteMessages)
 
@@ -1003,7 +784,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
 		videoFormat.LanguageDisplayName(),
 	)
 
-	var tgvideo *TgVideo
+	var tgvideo *tg.Video
 	tgvideoCaption := fmt.Sprintf(
 		"%s %s"+NL+
 			"youtu.be/%s %s %s ",
@@ -1029,7 +810,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
 			if v.PlaylistId != "" && v.PlaylistTitle != "" {
 				downloadingmessagetext = fmt.Sprintf("%d/%d %s "+NL, v.PlaylistIndex+1, v.PlaylistSize, v.PlaylistTitle) + downloadingmessagetext
 			}
-			if downloadingmessage, err := tgsendMessage(downloadingmessagetext, m.Chat.Id, "", 0); err == nil && downloadingmessage != nil {
+			if downloadingmessage, err := tg.SendMessage(downloadingmessagetext, m.Chat.Id, "", 0); err == nil && downloadingmessage != nil {
 				tgdeleteMessages = append(tgdeleteMessages, TgChatMessageId{m.Chat.Id, downloadingmessage.MessageId})
 			}
 		}
@@ -1055,7 +836,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
 			if targetVideoBitrateKbps > 0 {
 				downloadedmessagetext += NL + fmt.Sprintf("transcoding to audio:%dkbps video:%dkbps", Config.TgAudioBitrateKbps, targetVideoBitrateKbps)
 			}
-			downloadedmessage, err := tgsendMessage(downloadedmessagetext, m.Chat.Id, "", 0)
+			downloadedmessage, err := tg.SendMessage(downloadedmessagetext, m.Chat.Id, "", 0)
 			if err == nil && downloadedmessage != nil {
 				tgdeleteMessages = append(tgdeleteMessages, TgChatMessageId{m.Chat.Id, downloadedmessage.MessageId})
 			}
@@ -1081,14 +862,14 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
 	}
 	defer tgvideoReader.Close()
 
-	tgvideo, err = tgsendVideoFile(
-		m.Chat.Id,
-		tgvideoCaption,
-		tgvideoReader,
-		videoFormat.Width,
-		videoFormat.Height,
-		vinfo.Duration,
-	)
+	tgvideo, err = tg.SendVideoFile(tg.SendVideoFileRequest{
+		ChatId:   strconv.FormatInt(m.Chat.Id, 10),
+		Caption:  tgvideoCaption,
+		Video:    tgvideoReader,
+		Width:    videoFormat.Width,
+		Height:   videoFormat.Height,
+		Duration: vinfo.Duration,
+	})
 	if err != nil {
 		return fmt.Errorf("tgsendVideoFile: %w", err)
 	}
@@ -1107,13 +888,13 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
 	return nil
 }
 
-func postAudio(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
+func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	var audioFormat, audioSmallestFormat ytdl.Format
 
-	var tgdeleteMessages []TgChatMessageId
-	defer func(mm *[]TgChatMessageId) {
-		for _, cm := range *mm {
-			tgdeleteMessage(cm.ChatId, cm.MessageId)
+	var tgdeleteMessages []tg.DeleteMessageRequest
+	defer func(mm *[]tg.DeleteMessageRequest) {
+		for _, dmr := range *mm {
+			tg.DeleteMessage(dmr)
 		}
 	}(&tgdeleteMessages)
 
@@ -1174,7 +955,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
 		audioFormat.LanguageDisplayName(),
 	)
 
-	var tgaudio *TgAudio
+	var tgaudio *tg.Audio
 	tgaudioCaption := fmt.Sprintf(
 		"%s %s "+NL+
 			"youtu.be/%s %s %dkbps ",
@@ -1200,7 +981,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
 			if v.PlaylistId != "" && v.PlaylistTitle != "" {
 				downloadingmessagetext = fmt.Sprintf("%d/%d %s "+NL, v.PlaylistIndex+1, v.PlaylistSize, v.PlaylistTitle) + downloadingmessagetext
 			}
-			if downloadingmessage, err := tgsendMessage(downloadingmessagetext, m.Chat.Id, "", 0); err == nil && downloadingmessage != nil {
+			if downloadingmessage, err := tg.SendMessage(downloadingmessagetext, m.Chat.Id, "", 0); err == nil && downloadingmessage != nil {
 				tgdeleteMessages = append(tgdeleteMessages, TgChatMessageId{m.Chat.Id, downloadingmessage.MessageId})
 			}
 		}
@@ -1226,7 +1007,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
 			if targetAudioBitrateKbps > 0 {
 				downloadedmessagetext += NL + fmt.Sprintf("transcoding to audio:%dkbps", targetAudioBitrateKbps)
 			}
-			downloadedmessage, err := tgsendMessage(downloadedmessagetext, m.Chat.Id, "", 0)
+			downloadedmessage, err := tg.SendMessage(downloadedmessagetext, m.Chat.Id, "", 0)
 			if err == nil && downloadedmessage != nil {
 				tgdeleteMessages = append(tgdeleteMessages, TgChatMessageId{m.Chat.Id, downloadedmessage.MessageId})
 			}
@@ -1252,14 +1033,14 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m TgMessage) error {
 	}
 	defer tgaudioReader.Close()
 
-	tgaudio, err = tgsendAudioFile(
-		m.Chat.Id,
-		tgaudioCaption,
-		tgaudioReader,
-		vinfo.Author,
-		vinfo.Title,
-		vinfo.Duration,
-	)
+	tgaudio, err = tg.SendAudioFile(tg.SendAudioFileRequest{
+		ChatId:    strconv.FormatInt(m.Chat.Id, 10),
+		Caption:   tgaudioCaption,
+		Audio:     tgaudioReader,
+		Performer: vinfo.Author,
+		Title:     vinfo.Title,
+		Duration:  vinfo.Duration,
+	})
 	if err != nil {
 		return fmt.Errorf("tgsendAudioFile: %w", err)
 	}
@@ -1341,348 +1122,6 @@ func getList(ytlistid string) (ytitems []YtVideo, err error) {
 	}
 
 	return ytitems, nil
-}
-
-func safestring(s string) (t string) {
-	for _, r := range s {
-		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
-			r = '.'
-		}
-		t = t + string(r)
-	}
-
-	if len([]rune(t)) > 40 {
-		t = string([]rune(t)[:40])
-	}
-
-	return t
-}
-
-func tgsendVideoFile(chatid int64, caption string, video io.Reader, width, height int, duration time.Duration) (tgvideo *TgVideo, err error) {
-	piper, pipew := io.Pipe()
-	mpartw := multipart.NewWriter(pipew)
-
-	var mparterr error
-	go func(err error) {
-		defer func() {
-			if mparterr != nil {
-				log("mparterr: %v", err)
-			}
-		}()
-
-		var formw io.Writer
-
-		defer pipew.Close()
-
-		// chat_id
-		formw, err = mpartw.CreateFormField("chat_id")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`chat_id`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(strconv.Itoa(int(chatid))))
-		if err != nil {
-			err = fmt.Errorf("Write(chat_id): %w", err)
-			return
-		}
-
-		// caption
-		formw, err = mpartw.CreateFormField("caption")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`caption`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(caption))
-		if err != nil {
-			err = fmt.Errorf("Write(caption): %w", err)
-			return
-		}
-
-		// width
-		formw, err = mpartw.CreateFormField("width")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`width`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(strconv.Itoa(width)))
-		if err != nil {
-			err = fmt.Errorf("Write(width): %w", err)
-			return
-		}
-
-		// height
-		formw, err = mpartw.CreateFormField("height")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`height`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(strconv.Itoa(height)))
-		if err != nil {
-			err = fmt.Errorf("Write(height): %w", err)
-			return
-		}
-
-		// video
-		formw, err = mpartw.CreateFormFile("video", safestring(caption))
-		if err != nil {
-			err = fmt.Errorf("CreateFormFile('video'): %w", err)
-			return
-		}
-		_, err = io.Copy(formw, video)
-		if err != nil {
-			err = fmt.Errorf("Copy video: %w", err)
-			return
-		}
-
-		// duration
-		formw, err = mpartw.CreateFormField("duration")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`duration`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(strconv.Itoa(int(duration.Seconds()))))
-		if err != nil {
-			err = fmt.Errorf("Write(duration): %w", err)
-			return
-		}
-
-		if err := mpartw.Close(); err != nil {
-			err = fmt.Errorf("multipart.Writer.Close: %w", err)
-			return
-		}
-	}(mparterr)
-
-	t0 := time.Now()
-
-	resp, err := HttpClient.Post(
-		fmt.Sprintf("%s/bot%s/sendVideo", Config.TgApiUrlBase, Config.TgToken),
-		mpartw.FormDataContentType(),
-		piper,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if mparterr != nil {
-		return nil, err
-	}
-
-	var tgresp TgResponse
-	err = json.NewDecoder(resp.Body).Decode(&tgresp)
-	if err != nil {
-		return nil, fmt.Errorf("Decode: %w", err)
-	}
-	if !tgresp.Ok {
-		return nil, fmt.Errorf("sendVideo: %s", tgresp.Description)
-	}
-
-	msg := tgresp.Result
-	tgvideo = &msg.Video
-	if tgvideo.FileId == "" {
-		return nil, fmt.Errorf("sendVideo: Video.FileId empty")
-	}
-
-	log("sent the video to telegram in %v", time.Since(t0).Truncate(time.Second))
-
-	return tgvideo, nil
-}
-
-func tgsendAudioFile(chatid int64, caption string, audio io.Reader, performer, title string, duration time.Duration) (tgaudio *TgAudio, err error) {
-	piper, pipew := io.Pipe()
-	mpartw := multipart.NewWriter(pipew)
-
-	var mparterr error
-	go func(err error) {
-		defer func() {
-			if mparterr != nil {
-				log("mparterr: %v", err)
-			}
-		}()
-
-		var formw io.Writer
-
-		defer pipew.Close()
-
-		// chat_id
-		formw, err = mpartw.CreateFormField("chat_id")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`chat_id`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(strconv.Itoa(int(chatid))))
-		if err != nil {
-			err = fmt.Errorf("Write(chat_id): %w", err)
-			return
-		}
-
-		// performer
-		formw, err = mpartw.CreateFormField("performer")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`performer`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(performer))
-		if err != nil {
-			err = fmt.Errorf("Write(performer): %w", err)
-			return
-		}
-
-		// title
-		formw, err = mpartw.CreateFormField("title")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`title`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(title))
-		if err != nil {
-			err = fmt.Errorf("Write(title): %w", err)
-			return
-		}
-
-		// caption
-		formw, err = mpartw.CreateFormField("caption")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`caption`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(caption))
-		if err != nil {
-			err = fmt.Errorf("Write(caption): %w", err)
-			return
-		}
-
-		// audio
-		formw, err = mpartw.CreateFormFile("audio", safestring(fmt.Sprintf("%s.%s", performer, title)))
-		if err != nil {
-			err = fmt.Errorf("CreateFormFile('audio'): %w", err)
-			return
-		}
-		_, err = io.Copy(formw, audio)
-		if err != nil {
-			err = fmt.Errorf("Copy audio: %w", err)
-			return
-		}
-
-		// duration
-		formw, err = mpartw.CreateFormField("duration")
-		if err != nil {
-			err = fmt.Errorf("CreateFormField(`duration`): %w", err)
-			return
-		}
-		_, err = formw.Write([]byte(strconv.Itoa(int(duration.Seconds()))))
-		if err != nil {
-			err = fmt.Errorf("Write(duration): %w", err)
-			return
-		}
-
-		if err := mpartw.Close(); err != nil {
-			err = fmt.Errorf("multipart.Writer.Close: %w", err)
-			return
-		}
-	}(mparterr)
-
-	t0 := time.Now()
-
-	resp, err := HttpClient.Post(
-		fmt.Sprintf("%s/bot%s/sendAudio", Config.TgApiUrlBase, Config.TgToken),
-		mpartw.FormDataContentType(),
-		piper,
-	)
-	if err != nil {
-		if regexp.MustCompile("Too Many Requests: retry after [0-9]+$").MatchString(fmt.Sprintf("%s", err)) {
-			log("WARNING telegram api too many requests: sleeping 33 seconds")
-			time.Sleep(33 * time.Second)
-		}
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if mparterr != nil {
-		return nil, err
-	}
-
-	var tgresp TgResponse
-	err = json.NewDecoder(resp.Body).Decode(&tgresp)
-	if err != nil {
-		return nil, fmt.Errorf("Decode: %w", err)
-	}
-	if !tgresp.Ok {
-		return nil, fmt.Errorf("sendAudio: %s", tgresp.Description)
-	}
-
-	msg := tgresp.Result
-	tgaudio = &msg.Audio
-	if tgaudio.FileId == "" {
-		return nil, fmt.Errorf("sendAudio: Audio.FileId empty")
-	}
-
-	log("sent the audio to telegram in %v", time.Since(t0).Truncate(time.Second))
-
-	return tgaudio, nil
-}
-
-func tgsendMessage(text string, chatid int64, parsemode string, replytomessageid int64) (msg *TgMessage, err error) {
-	// https://core.telegram.org/bots/api/#sendmessage
-	// https://core.telegram.org/bots/api/#formatting-options
-	sendMessage := map[string]interface{}{
-		"chat_id":                  chatid,
-		"text":                     text,
-		"parse_mode":               parsemode,
-		"disable_web_page_preview": true,
-	}
-	if replytomessageid != 0 {
-		sendMessage["reply_to_message_id"] = replytomessageid
-	}
-	sendMessageJSON, err := json.Marshal(sendMessage)
-	if err != nil {
-		return nil, err
-	}
-
-	var tgresp TgResponse
-	err = postJson(
-		fmt.Sprintf("%s/bot%s/sendMessage", Config.TgApiUrlBase, Config.TgToken),
-		bytes.NewBuffer(sendMessageJSON),
-		&tgresp,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	if !tgresp.Ok {
-		return nil, fmt.Errorf("sendMessage: %s", tgresp.Description)
-	}
-
-	msg = tgresp.Result
-
-	return msg, nil
-}
-
-func tgdeleteMessage(chatid, messageid int64) error {
-	deleteMessage := map[string]interface{}{
-		"chat_id":    chatid,
-		"message_id": messageid,
-	}
-	deleteMessageJSON, err := json.Marshal(deleteMessage)
-	if err != nil {
-		return err
-	}
-
-	var tgresp TgResponseShort
-	err = postJson(
-		fmt.Sprintf("%s/bot%s/deleteMessage", Config.TgApiUrlBase, Config.TgToken),
-		bytes.NewBuffer(deleteMessageJSON),
-		&tgresp,
-	)
-	if err != nil {
-		return fmt.Errorf("postJson: %w", err)
-	}
-
-	if !tgresp.Ok {
-		return fmt.Errorf("deleteMessage: %s", tgresp.Description)
-	}
-
-	return nil
 }
 
 func FfmpegTranscode(filename, filename2 string, videoBitrateKbps, audioBitrateKbps int64) (err error) {
