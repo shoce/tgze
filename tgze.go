@@ -146,6 +146,8 @@ func init() {
 
 	tg.ApiToken = Config.TgToken
 
+	tg.ApiUrl = Config.TgApiUrlBase
+
 	log("TgUpdateLog==%+v", Config.TgUpdateLog)
 
 	if Config.TgCommandChannels == "" {
