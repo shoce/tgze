@@ -194,24 +194,6 @@ func main() {
 	return
 }
 
-func beats(td time.Duration) int {
-	return int(td / BEAT)
-}
-
-func ts() string {
-	tnow := time.Now().In(time.FixedZone("IST", 330*60))
-	return fmt.Sprintf(
-		"%d:%02d%02d:%02d%02d",
-		tnow.Year()%1000, tnow.Month(), tnow.Day(),
-		tnow.Hour(), tnow.Minute(),
-	)
-}
-
-func log(msg string, args ...interface{}) {
-	s := fmt.Sprintf("%s %s", ts(), msg) + NL
-	fmt.Fprintf(os.Stderr, s, args...)
-}
-
 type YtChannel struct {
 	Id             string `json:"id"`
 	ContentDetails struct {
@@ -1182,6 +1164,24 @@ func FfmpegTranscode(filename, filename2 string, videoBitrateKbps, audioBitrateK
 	log("transcoded in %v", time.Since(t0).Truncate(time.Second))
 
 	return nil
+}
+
+func beats(td time.Duration) int {
+	return int(td / BEAT)
+}
+
+func ts() string {
+	tnow := time.Now().In(time.FixedZone("IST", 330*60))
+	return fmt.Sprintf(
+		"%d%02d%02d:%02d%02d",
+		tnow.Year()%1000, tnow.Month(), tnow.Day(),
+		tnow.Hour(), tnow.Minute(),
+	)
+}
+
+func log(msg string, args ...interface{}) {
+	s := fmt.Sprintf("%s %s", ts(), msg) + NL
+	fmt.Fprintf(os.Stderr, s, args...)
 }
 
 func (config *TgZeConfig) Get() error {
