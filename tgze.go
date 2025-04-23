@@ -199,10 +199,11 @@ func beats(td time.Duration) int {
 }
 
 func ts() string {
-	t := time.Now().Local()
+	tnow := time.Now().In(time.FixedZone("IST", 330*60))
 	return fmt.Sprintf(
-		"%03d:"+"%02d%02d:"+"%02d%02d",
-		t.Year()%1000, t.Month(), t.Day(), t.Hour(), t.Minute(),
+		"%d:%02d%02d:%02d%02d",
+		tnow.Year()%1000, tnow.Month(), tnow.Day(),
+		tnow.Hour(), tnow.Minute(),
 	)
 }
 
@@ -988,8 +989,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	*/
 
 	t0 := time.Now()
-	_, err = io.Copy(tgaudioFile, ytstream)
-	if err != nil {
+	if _, err := io.Copy(tgaudioFile, ytstream); err != nil {
 		return fmt.Errorf("download youtu.be/%s audio: %w", v.Id, err)
 	}
 
@@ -1031,15 +1031,16 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	if err != nil {
 		return fmt.Errorf("os.Open: %w", err)
 	}
+	log("DEBUG tgaudioReader==%#v", tgaudioReader)
 	defer tgaudioReader.Close()
 
 	tgaudio, err = tg.SendAudioFile(tg.SendAudioFileRequest{
 		ChatId:    strconv.FormatInt(m.Chat.Id, 10),
 		Caption:   tgaudioCaption,
-		Audio:     tgaudioReader,
 		Performer: vinfo.Author,
 		Title:     vinfo.Title,
 		Duration:  vinfo.Duration,
+		Audio:     tgaudioReader,
 	})
 	if err != nil {
 		return fmt.Errorf("tgsendAudioFile: %w", err)

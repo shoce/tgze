@@ -10,12 +10,12 @@ github.com/dop251/goja v0.0.0-20250309171923-bcd7cc6bf64c h1:mxWGS0YyquJ/ikZOjSr
 github.com/dop251/goja v0.0.0-20250309171923-bcd7cc6bf64c/go.mod h1:MxLav0peU43GgvwVgNbLAj1s/bSGboKkhuULvq/7hx4=
 github.com/go-sourcemap/sourcemap v2.1.4+incompatible h1:a+iTbH5auLKxaNwQFg0B+TCYl6lbukKPc7b5x0n1s6Q=
 github.com/go-sourcemap/sourcemap v2.1.4+incompatible/go.mod h1:F8jJfvm2KbVjc5NqelyYJmf/v5J0dwNLS2mL4sNA1Jg=
-github.com/google/pprof v0.0.0-20250422154841-e1f9c1950416 h1:1/qwHx8P72glDXdyCKesJ+/c40x71SY4q2avOxJ2iYQ=
-github.com/google/pprof v0.0.0-20250422154841-e1f9c1950416/go.mod h1:5hDyRhoBCxViHszMt12TnOpEI4VVi+U8Gm9iphldiMA=
+github.com/google/pprof v0.0.0-20250423184734-337e5dd93bb4 h1:gD0vax+4I+mAj+jEChEf25Ia07Jq7kYOFO5PPhAxFl4=
+github.com/google/pprof v0.0.0-20250423184734-337e5dd93bb4/go.mod h1:5hDyRhoBCxViHszMt12TnOpEI4VVi+U8Gm9iphldiMA=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/shoce/tg v0.250423.1650 h1:D4TGbDKQmXb3F3+Xvdj+GlFxKDwRO0Ch/gok+5AhHAs=
-github.com/shoce/tg v0.250423.1650/go.mod h1:0DTDEtKAWA6Qmpvm0tscXVmIgu2JNyNMGXP97XxovgY=
+github.com/shoce/tg v0.250423.1918 h1:7k1wTTRULQFiOXllSr2WJUXjy7WXfSl/qgg3IhVghxs=
+github.com/shoce/tg v0.250423.1918/go.mod h1:0DTDEtKAWA6Qmpvm0tscXVmIgu2JNyNMGXP97XxovgY=
 github.com/shoce/youtube/v2 v2.0.0-20250423153824-38396ba8fa71 h1:YZhk3VZ6ZGyYvcuM8I80ZPEA6xf0IgT/vSEKfTdAsAI=
 github.com/shoce/youtube/v2 v2.0.0-20250423153824-38396ba8fa71/go.mod h1:pm4RuJ2tRIIaOvz4YMIpCY8Ls4Fm7IVtnZQyule61MU=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
