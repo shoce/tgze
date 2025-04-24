@@ -18,4 +18,4 @@ require (
 	golang.org/x/text v0.24.0 // indirect
 )
 
-replace github.com/kkdai/youtube/v2 => github.com/shoce/youtube/v2 v2.0.0-20250423153824-38396ba8fa71
+replace github.com/kkdai/youtube/v2 => github.com/shoce/youtube/v2 v2.0.0-20250424180213-84ddc6d0f4eb
