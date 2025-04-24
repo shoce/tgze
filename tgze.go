@@ -176,7 +176,7 @@ func main() {
 		<-sigterm
 		tg.SendMessage(tg.SendMessageRequest{
 			ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
-			Text:   fmt.Sprintf("%s: sigterm", os.Args[0]),
+			Text:   tg.Esc(fmt.Sprintf("%s: sigterm", os.Args[0])),
 		})
 		log("sigterm received")
 		os.Exit(1)
@@ -430,7 +430,7 @@ func processTgUpdates() {
 			)
 			_, err = tg.SendMessage(tg.SendMessageRequest{
 				ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
-				Text:   report,
+				Text:   tg.Esc(report),
 			})
 			if err != nil {
 				log("tg.SendMessage: %v", err)
@@ -439,7 +439,7 @@ func processTgUpdates() {
 			log("WARNING unsupported type of update id:%d received:"+NL+"%s", u.UpdateId, respjson)
 			_, err = tg.SendMessage(tg.SendMessageRequest{
 				ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
-				Text:   fmt.Sprintf("unsupported type of update (id:%d) received:"+NL+"```"+NL+"%s"+NL+"```", u.UpdateId, respjson),
+				Text:   tg.Esc(fmt.Sprintf("unsupported type of update (id:%d) received:"+NL+"```"+NL+"%s"+NL+"```", u.UpdateId, respjson)),
 			})
 			if err != nil {
 				log("WARNING tg.SendMessage: %v", err)
@@ -540,7 +540,7 @@ func processTgUpdates() {
 					}
 					_, err = tg.SendMessage(tg.SendMessageRequest{
 						ChatId: strconv.FormatInt(m.Chat.Id, 10),
-						Text:   fmt.Sprintf("id:%d err:%v", i, getChatErr),
+						Text:   tg.Esc(fmt.Sprintf("id:%d err:%v", i, getChatErr)),
 					})
 					if err != nil {
 						log("tg.SendMessage: %v", err)
@@ -555,7 +555,7 @@ func processTgUpdates() {
 				}
 				_, err = tg.SendMessage(tg.SendMessageRequest{
 					ChatId: strconv.FormatInt(m.Chat.Id, 10),
-					Text:   chatinfo,
+					Text:   tg.Esc(chatinfo),
 				})
 				if err != nil {
 					log("tg.SendMessage: %v", err)
@@ -568,7 +568,7 @@ func processTgUpdates() {
 			_, err = tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           strconv.FormatInt(m.Chat.Id, 10),
 				ReplyToMessageId: m.MessageId,
-				Text:             totalmessage,
+				Text:             tg.Esc(totalmessage),
 			})
 			if err != nil {
 				log("tg.SendMessage: %v", err)
@@ -590,7 +590,7 @@ func processTgUpdates() {
 			_, err = tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           strconv.FormatInt(m.Chat.Id, 10),
 				ReplyToMessageId: m.MessageId,
-				Text:             fmt.Sprintf("ok for %d of total %d channels.", totalok, total),
+				Text:             tg.Esc(fmt.Sprintf("ok for %d of total %d channels.", totalok, total)),
 			})
 			if err != nil {
 				log("tg.SendMessage: %v", err)
@@ -600,7 +600,7 @@ func processTgUpdates() {
 		if strings.TrimSpace(m.Text) == Config.TgQuest1 {
 			_, err = tg.SendMessage(tg.SendMessageRequest{
 				ChatId: strconv.FormatInt(m.Chat.Id, 10),
-				Text:   Config.TgQuest1Key,
+				Text:   tg.Code(Config.TgQuest1Key),
 			})
 			if err != nil {
 				log("tg.SendMessage: %v", err)
@@ -609,7 +609,7 @@ func processTgUpdates() {
 		if strings.TrimSpace(m.Text) == Config.TgQuest2 {
 			_, err = tg.SendMessage(tg.SendMessageRequest{
 				ChatId: strconv.FormatInt(m.Chat.Id, 10),
-				Text:   Config.TgQuest2Key,
+				Text:   tg.Code(Config.TgQuest2Key),
 			})
 			if err != nil {
 				log("tg.SendMessage: %v", err)
@@ -618,7 +618,7 @@ func processTgUpdates() {
 		if strings.TrimSpace(m.Text) == Config.TgQuest3 {
 			_, err = tg.SendMessage(tg.SendMessageRequest{
 				ChatId: strconv.FormatInt(m.Chat.Id, 10),
-				Text:   Config.TgQuest3Key,
+				Text:   tg.Code(Config.TgQuest3Key),
 			})
 			if err != nil {
 				log("tg.SendMessage: %v", err)
@@ -656,15 +656,13 @@ func processTgUpdates() {
 				}
 
 				if downloadvideo {
-					err = postVideo(v, vinfo, m)
-					if err != nil {
+					if err := postVideo(v, vinfo, m); err != nil {
 						log("ERROR postVideo: %v", err)
 						postingerr = err
 						break
 					}
 				} else {
-					err = postAudio(v, vinfo, m)
-					if err != nil {
+					if err := postAudio(v, vinfo, m); err != nil {
 						log("ERROR postAudio: %v", err)
 						postingerr = err
 						break
@@ -679,21 +677,19 @@ func processTgUpdates() {
 			if postingerr == nil {
 				if ischannelpost {
 					// TODO do not delete if playlist
-					err = tg.DeleteMessage(tg.DeleteMessageRequest{
+					if err := tg.DeleteMessage(tg.DeleteMessageRequest{
 						ChatId:    strconv.FormatInt(m.Chat.Id, 10),
 						MessageId: m.MessageId,
-					})
-					if err != nil {
+					}); err != nil {
 						log("tg.DeleteMessage: %v", err)
 					}
 				}
 			} else {
-				_, err = tg.SendMessage(tg.SendMessageRequest{
+				if _, err := tg.SendMessage(tg.SendMessageRequest{
 					ChatId:           strconv.FormatInt(m.Chat.Id, 10),
 					ReplyToMessageId: m.MessageId,
-					Text:             fmt.Sprintf("ERROR %v", postingerr),
-				})
-				if err != nil {
+					Text:             tg.Esc(fmt.Sprintf("ERROR %v", postingerr)),
+				}); err != nil {
 					log("tg.SendMessage: %v", err)
 				}
 			}
@@ -789,18 +785,6 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 		return fmt.Errorf("os.OpenFile: %w", err)
 	}
 
-	/*
-		if Config.DEBUG {
-			downloadingmessagetext := fmt.Sprintf("%s"+NL+"youtu.be/%s %s %s"+NL+"downloading", vinfo.Title, v.Id, vinfo.Duration, videoFormat.QualityLabel)
-			if v.PlaylistId != "" && v.PlaylistTitle != "" {
-				downloadingmessagetext = fmt.Sprintf("%d/%d %s "+NL, v.PlaylistIndex+1, v.PlaylistSize, v.PlaylistTitle) + downloadingmessagetext
-			}
-			if downloadingmessage, err := tg.SendMessage(downloadingmessagetext, m.Chat.Id, "", 0); err == nil && downloadingmessage != nil {
-				tgdeleteMessages = append(tgdeleteMessages, TgChatMessageId{m.Chat.Id, downloadingmessage.MessageId})
-			}
-		}
-	*/
-
 	t0 := time.Now()
 	_, err = io.Copy(tgvideoFile, ytstream)
 	if err != nil {
@@ -815,18 +799,6 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	}
 
 	log("downloaded youtu.be/%s video in %v", v.Id, time.Since(t0).Truncate(time.Second))
-	/*
-		if Config.DEBUG {
-			downloadedmessagetext := fmt.Sprintf("%s"+NL+"youtu.be/%s %s %s"+NL+"downloaded video in %v", vinfo.Title, v.Id, vinfo.Duration, videoFormat.QualityLabel, time.Since(t0).Truncate(time.Second))
-			if targetVideoBitrateKbps > 0 {
-				downloadedmessagetext += NL + fmt.Sprintf("transcoding to audio:%dkbps video:%dkbps", Config.TgAudioBitrateKbps, targetVideoBitrateKbps)
-			}
-			downloadedmessage, err := tg.SendMessage(downloadedmessagetext, m.Chat.Id, "", 0)
-			if err == nil && downloadedmessage != nil {
-				tgdeleteMessages = append(tgdeleteMessages, TgChatMessageId{m.Chat.Id, downloadedmessage.MessageId})
-			}
-		}
-	*/
 
 	if Config.FfmpegPath != "" && targetVideoBitrateKbps > 0 {
 		filename2 := fmt.Sprintf("%s.%s.v%dk.a%dk.mp4", ts(), v.Id, targetVideoBitrateKbps, Config.TgAudioBitrateKbps)
@@ -960,18 +932,6 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 		return fmt.Errorf("create file: %w", err)
 	}
 
-	/*
-		if Config.DEBUG {
-			downloadingmessagetext := fmt.Sprintf("%s"+NL+"youtu.be/%s %s %dkbps"+NL+"downloading", vinfo.Title, v.Id, vinfo.Duration, audioFormat.Bitrate/1024)
-			if v.PlaylistId != "" && v.PlaylistTitle != "" {
-				downloadingmessagetext = fmt.Sprintf("%d/%d %s "+NL, v.PlaylistIndex+1, v.PlaylistSize, v.PlaylistTitle) + downloadingmessagetext
-			}
-			if downloadingmessage, err := tg.SendMessage(downloadingmessagetext, m.Chat.Id, "", 0); err == nil && downloadingmessage != nil {
-				tgdeleteMessages = append(tgdeleteMessages, TgChatMessageId{m.Chat.Id, downloadingmessage.MessageId})
-			}
-		}
-	*/
-
 	t0 := time.Now()
 	if _, err := io.Copy(tgaudioFile, ytstream); err != nil {
 		return fmt.Errorf("download youtu.be/%s audio: %w", v.Id, err)
@@ -985,18 +945,6 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	}
 
 	log("downloaded youtu.be/%s audio in %v", v.Id, time.Since(t0).Truncate(time.Second))
-	/*
-		if Config.DEBUG {
-			downloadedmessagetext := fmt.Sprintf("%s"+NL+"youtu.be/%s %s %dkbps"+NL+"downloaded audio in %s", vinfo.Title, v.Id, vinfo.Duration, audioFormat.Bitrate/1024, time.Since(t0).Truncate(time.Second))
-			if targetAudioBitrateKbps > 0 {
-				downloadedmessagetext += NL + fmt.Sprintf("transcoding to audio:%dkbps", targetAudioBitrateKbps)
-			}
-			downloadedmessage, err := tg.SendMessage(downloadedmessagetext, m.Chat.Id, "", 0)
-			if err == nil && downloadedmessage != nil {
-				tgdeleteMessages = append(tgdeleteMessages, TgChatMessageId{m.Chat.Id, downloadedmessage.MessageId})
-			}
-		}
-	*/
 
 	if Config.FfmpegPath != "" && targetAudioBitrateKbps > 0 {
 		filename2 := fmt.Sprintf("%s.%s.a%dk.m4a", ts(), v.Id, targetAudioBitrateKbps)
@@ -1175,7 +1123,7 @@ func beats(td time.Duration) int {
 func ts() string {
 	tnow := time.Now().In(time.FixedZone("IST", 330*60))
 	return fmt.Sprintf(
-		"%d%02d%02d:%02d%02d",
+		"%d%02d%02d:%02d%02d+",
 		tnow.Year()%1000, tnow.Month(), tnow.Day(),
 		tnow.Hour(), tnow.Minute(),
 	)
