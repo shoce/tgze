@@ -765,7 +765,6 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 		videoFormat.LanguageDisplayName(),
 	)
 
-	var tgvideo *tg.Video
 	tgvideoCaption := fmt.Sprintf(
 		"%s %s"+NL+
 			"youtu.be/%s %s %s ",
@@ -819,15 +818,14 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	}
 	defer tgvideoReader.Close()
 
-	tgvideo, err = tg.SendVideoFile(tg.SendVideoFileRequest{
+	if _, err := tg.SendVideoFile(tg.SendVideoFileRequest{
 		ChatId:   strconv.FormatInt(m.Chat.Id, 10),
 		Caption:  tgvideoCaption,
 		Video:    tgvideoReader,
 		Width:    videoFormat.Width,
 		Height:   videoFormat.Height,
 		Duration: vinfo.Duration,
-	})
-	if err != nil {
+	}); err != nil {
 		return fmt.Errorf("tgsendVideoFile: %w", err)
 	}
 
@@ -836,10 +834,6 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	}
 	if err := os.Remove(tgvideoFilename); err != nil {
 		log("os.Remove: %v", err)
-	}
-
-	if tgvideo.FileId == "" {
-		return fmt.Errorf("tgsendVideoFile: file_id empty")
 	}
 
 	return nil
@@ -912,7 +906,6 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 		audioFormat.LanguageDisplayName(),
 	)
 
-	var tgaudio *tg.Audio
 	tgaudioCaption := fmt.Sprintf(
 		"%s %s "+NL+
 			"youtu.be/%s %s %dkbps ",
@@ -966,15 +959,14 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	log("DEBUG tgaudioReader==%#v", tgaudioReader)
 	defer tgaudioReader.Close()
 
-	tgaudio, err = tg.SendAudioFile(tg.SendAudioFileRequest{
+	if _, err := tg.SendAudioFile(tg.SendAudioFileRequest{
 		ChatId:    strconv.FormatInt(m.Chat.Id, 10),
 		Caption:   tgaudioCaption,
 		Performer: vinfo.Author,
 		Title:     vinfo.Title,
 		Duration:  vinfo.Duration,
 		Audio:     tgaudioReader,
-	})
-	if err != nil {
+	}); err != nil {
 		return fmt.Errorf("tgsendAudioFile: %w", err)
 	}
 
@@ -983,13 +975,6 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	}
 	if err := os.Remove(tgaudioFilename); err != nil {
 		log("os.Remove: %v", err)
-	}
-
-	if tgaudio == nil {
-		return fmt.Errorf("tgsendAudioFile: result is nil")
-	}
-	if tgaudio.FileId == "" {
-		return fmt.Errorf("tgsendAudioFile: file_id empty")
 	}
 
 	return nil
