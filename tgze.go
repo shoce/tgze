@@ -1115,8 +1115,7 @@ func ts() string {
 }
 
 func log(msg string, args ...interface{}) {
-	s := fmt.Sprintf("%s %s", ts(), msg) + NL
-	fmt.Fprintf(os.Stderr, s, args...)
+	fmt.Fprintf(os.Stderr, ts()+" "+msg+NL, args...)
 }
 
 func (config *TgZeConfig) Get() error {
