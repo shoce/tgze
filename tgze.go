@@ -24,7 +24,6 @@ import (
 	"os/signal"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -175,7 +174,7 @@ func main() {
 	go func(sigterm chan os.Signal) {
 		<-sigterm
 		tg.SendMessage(tg.SendMessageRequest{
-			ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
+			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 			Text:   tg.Esc("%s: sigterm", os.Args[0]),
 		})
 		log("sigterm received")
@@ -405,13 +404,12 @@ func processTgUpdates() {
 		} else if u.MyChatMemberUpdated.Date != 0 {
 			cmu := u.MyChatMemberUpdated
 			report := tg.Bold("MyChatMemberUpdated") + NL +
-				tg.Bold("from:") + " username==@" + cmu.From.Username + " id==" + tg.Code(fmt.Sprintf("%d", cmu.From.Id)) + NL +
-				tg.Bold("chat:") + " id==" + tg.Code(fmt.Sprintf("%d", cmu.Chat.Id)) + " username: @" + cmu.Chat.Username + " type: " + cmu.Chat.Type + " title==" + tg.Esc(cmu.Chat.Title) + NL +
-				tg.Bold("old member:") + " username==@" + cmu.OldChatMember.User.Username + " id==" + tg.Code(fmt.Sprintf("%d", cmu.OldChatMember.User.Id)) + " status==" + cmu.OldChatMember.Status + NL +
-				tg.Bold("new member:") + " username==@" + cmu.NewChatMember.User.Username + " id==" + tg.Code(fmt.Sprintf("%d", cmu.NewChatMember.User.Id)) + " status==" + cmu.NewChatMember.Status + NL +
-				""
+				tg.Bold("from:") + tg.Esc(" username==@%s", cmu.From.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.From.Id) + NL +
+				tg.Bold("chat:") + tg.Esc(" id==") + tg.Code("%d", cmu.Chat.Id) + tg.Esc(" username: @%s", cmu.Chat.Username) + tg.Esc(" type: %s", cmu.Chat.Type) + tg.Esc(" title==%s", cmu.Chat.Title) + NL +
+				tg.Bold("old member:") + tg.Esc(" username==@%s", cmu.OldChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.OldChatMember.User.Id) + tg.Esc(" status==%s", cmu.OldChatMember.Status) + NL +
+				tg.Bold("new member:") + tg.Esc(" username==@%s", cmu.NewChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.NewChatMember.User.Id) + tg.Esc(" status==%s", cmu.NewChatMember.Status)
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
+				ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 				Text:   report,
 			}); err != nil {
 				log("tg.SendMessage: %v", err)
@@ -419,8 +417,8 @@ func processTgUpdates() {
 		} else {
 			log("WARNING unsupported type of update id:%d received:"+NL+"%s", u.UpdateId, respjson)
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
-				Text:   tg.Esc(fmt.Sprintf("unsupported type of update id==%d received:", u.UpdateId)) + NL + tg.Pre(respjson),
+				ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
+				Text:   tg.Esc("unsupported type of update id==%d received:", u.UpdateId) + NL + tg.Pre(respjson),
 			}); err != nil {
 				log("WARNING tg.SendMessage: %v", err)
 				continue
@@ -470,14 +468,14 @@ func processTgUpdates() {
 		}
 		if shouldreport && m.MessageId != 0 {
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId: strconv.FormatInt(Config.TgZeChatId, 10),
+				ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 				Text: tg.Bold("Message") + NL +
 					tg.Bold("from:") + tg.Esc(" username==@%s id==%d", m.From.Username, m.From.Id) + NL +
-					tg.Bold("chat:") + tg.Esc(" username==@%s id==%d type==%s title==%s", m.Chat.Id, m.Chat.Username, m.Chat.Type, m.Chat.Title) + NL +
-					tg.Bold("chat admins:") + tg.Esc(" %s", chatadmins) + NL +
+					tg.Bold("chat:") + tg.Esc(" username==@%s id==%d type==%s title==%s", m.Chat.Username, m.Chat.Id, m.Chat.Type, m.Chat.Title) + NL +
+					tg.Bold("chat admins:") + tg.Esc(" %v", chatadmins) + NL +
 					tg.Bold("iseditmessage:") + tg.Esc(" %v", iseditmessage) + NL +
 					tg.Bold("text:") + NL +
-					tg.Pre(m.Text),
+					tg.Code(m.Text),
 			}); err != nil {
 				log("tg.SendMessage: %v", err)
 				continue
@@ -486,12 +484,11 @@ func processTgUpdates() {
 
 		if strings.TrimSpace(m.Text) == "/id" {
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId:           strconv.FormatInt(m.Chat.Id, 10),
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text: tg.Esc(
-					"username %s"+NL+"user id %d"+NL+"chat id %d",
-					m.From.Username, m.From.Id, m.Chat.Id,
-				),
+				Text: tg.Esc("username %s", m.From.Username) + NL +
+					tg.Esc("user id %d", m.From.Id) + NL +
+					tg.Esc("chat id %d", m.Chat.Id),
 			}); err != nil {
 				log("tg.SendMessage: %v", err)
 			}
@@ -509,7 +506,7 @@ func processTgUpdates() {
 						continue
 					}
 					if _, err := tg.SendMessage(tg.SendMessageRequest{
-						ChatId: strconv.FormatInt(m.Chat.Id, 10),
+						ChatId: fmt.Sprintf("%d", m.Chat.Id),
 						Text:   tg.Esc("id==%d err==%v", i, tgerr),
 					}); err != nil {
 						log("tg.SendMessage: %v", err)
@@ -523,18 +520,18 @@ func processTgUpdates() {
 					chatinfo += NL + tg.Esc(c.InviteLink)
 				}
 				if _, err := tg.SendMessage(tg.SendMessageRequest{
-					ChatId: strconv.FormatInt(m.Chat.Id, 10),
+					ChatId: fmt.Sprintf("%d", m.Chat.Id),
 					Text:   chatinfo,
 				}); err != nil {
 					log("tg.SendMessage: %v", err)
 				}
 			}
-			totalmessage := tg.Esc("Total %d channels.", totalchannels) + NL
+			totalmessage := tg.Esc("Total %d channels.", totalchannels)
 			if removedchannels > 0 {
-				totalmessage += tg.Esc("Removed %d channels.", removedchannels)
+				totalmessage += NL + tg.Esc("Removed %d channels.", removedchannels)
 			}
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId:           strconv.FormatInt(m.Chat.Id, 10),
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
 				Text:             totalmessage,
 			}); err != nil {
@@ -545,7 +542,7 @@ func processTgUpdates() {
 		if strings.TrimSpace(m.Text) == Config.TgCommandChannelsPromoteAdmin {
 			var total, totalok int
 			for _, i := range Config.TgAllChannelsChatIds {
-				success, err := tg.PromoteChatMember(strconv.FormatInt(i, 10), strconv.FormatInt(m.From.Id, 10))
+				success, err := tg.PromoteChatMember(fmt.Sprintf("%d", i), fmt.Sprintf("%d", m.From.Id))
 				total++
 				if success != true || err != nil {
 					log("tgpromoteChatMember %d %d: %v", i, m.From.Id, err)
@@ -555,7 +552,7 @@ func processTgUpdates() {
 				}
 			}
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId:           strconv.FormatInt(m.Chat.Id, 10),
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
 				Text:             tg.Esc("ok for %d of total %d channels.", totalok, total),
 			}); err != nil {
@@ -565,7 +562,7 @@ func processTgUpdates() {
 
 		if strings.TrimSpace(m.Text) == Config.TgQuest1 {
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId: strconv.FormatInt(m.Chat.Id, 10),
+				ChatId: fmt.Sprintf("%d", m.Chat.Id),
 				Text:   tg.Code(Config.TgQuest1Key),
 			}); err != nil {
 				log("tg.SendMessage: %v", err)
@@ -573,7 +570,7 @@ func processTgUpdates() {
 		}
 		if strings.TrimSpace(m.Text) == Config.TgQuest2 {
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId: strconv.FormatInt(m.Chat.Id, 10),
+				ChatId: fmt.Sprintf("%d", m.Chat.Id),
 				Text:   tg.Code(Config.TgQuest2Key),
 			}); err != nil {
 				log("tg.SendMessage: %v", err)
@@ -581,7 +578,7 @@ func processTgUpdates() {
 		}
 		if strings.TrimSpace(m.Text) == Config.TgQuest3 {
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId: strconv.FormatInt(m.Chat.Id, 10),
+				ChatId: fmt.Sprintf("%d", m.Chat.Id),
 				Text:   tg.Code(Config.TgQuest3Key),
 			}); err != nil {
 				log("tg.SendMessage: %v", err)
@@ -641,7 +638,7 @@ func processTgUpdates() {
 				if ischannelpost {
 					// TODO do not delete if playlist
 					if err := tg.DeleteMessage(tg.DeleteMessageRequest{
-						ChatId:    strconv.FormatInt(m.Chat.Id, 10),
+						ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 						MessageId: m.MessageId,
 					}); err != nil {
 						log("tg.DeleteMessage: %v", err)
@@ -649,7 +646,7 @@ func processTgUpdates() {
 				}
 			} else {
 				if _, err := tg.SendMessage(tg.SendMessageRequest{
-					ChatId:           strconv.FormatInt(m.Chat.Id, 10),
+					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 					ReplyToMessageId: m.MessageId,
 					Text:             tg.Esc("ERROR %v", postingerr),
 				}); err != nil {
@@ -782,7 +779,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	defer tgvideoReader.Close()
 
 	if _, err := tg.SendVideoFile(tg.SendVideoFileRequest{
-		ChatId:   strconv.FormatInt(m.Chat.Id, 10),
+		ChatId:   fmt.Sprintf("%d", m.Chat.Id),
 		Caption:  tgvideoCaption,
 		Video:    tgvideoReader,
 		Width:    videoFormat.Width,
@@ -923,7 +920,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	defer tgaudioReader.Close()
 
 	if _, err := tg.SendAudioFile(tg.SendAudioFileRequest{
-		ChatId:    strconv.FormatInt(m.Chat.Id, 10),
+		ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 		Caption:   tgaudioCaption,
 		Performer: vinfo.Author,
 		Title:     vinfo.Title,
