@@ -24,6 +24,7 @@ import (
 	"os/signal"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -481,14 +482,34 @@ func processTgUpdates() {
 		}
 
 		if strings.TrimSpace(m.Text) == "/id" {
-			if _, err := tg.SendMessage(tg.SendMessageRequest{
+			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text: tg.Esc("username %s", m.From.Username) + NL +
-					tg.Esc("user id %d", m.From.Id) + NL +
-					tg.Esc("chat id %d", m.Chat.Id),
-			}); err != nil {
-				log("tg.SendMessage: %v", err)
+				Text: tg.Esc("username") + " " + tg.Code(m.From.Username) + NL +
+					tg.Esc("user id") + " " + tg.Code("%d", m.From.Id) + NL +
+					tg.Esc("chat id") + " " + tg.Code("%d", m.Chat.Id),
+			}); tgerr != nil {
+				log("tg.SendMessage: %v", tgerr)
+			}
+		}
+
+		if mff := strings.Fields(m.Text); len(mff) == 2 && mff[0] == "/id" {
+			if userid, err := strconv.ParseInt(mff[1], 10, 64); err != nil {
+				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+					ReplyToMessageId: m.MessageId,
+					Text:             tg.Esc("ERROR %s", err),
+				}); tgerr != nil {
+					log("tg.SendMessage: %v", tgerr)
+				}
+			} else {
+				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+					ReplyToMessageId: m.MessageId,
+					Text:             tg.Esc("tg://user?id=%d", userid),
+				}); tgerr != nil {
+					log("tg.SendMessage: %v", tgerr)
+				}
 			}
 		}
 
