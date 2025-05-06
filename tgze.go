@@ -506,7 +506,8 @@ func processTgUpdates() {
 				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 					ReplyToMessageId: m.MessageId,
-					Text:             tg.Esc("tg://user?id=%d", userid),
+					Text: tg.Esc("tg://user?id=%d", userid) + NL +
+						tg.Link("user profile link", fmt.Sprintf("tg://user?id=%d", userid)),
 				}); tgerr != nil {
 					log("tg.SendMessage: %v", tgerr)
 				}
