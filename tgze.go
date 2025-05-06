@@ -404,7 +404,7 @@ func processTgUpdates() {
 		} else if u.MyChatMemberUpdated.Date != 0 {
 			cmu := u.MyChatMemberUpdated
 			report := tg.Bold("MyChatMemberUpdated") + NL +
-				tg.Bold("from:") + " " + tg.Italic("%s %s", cmu.From.FirstName, cmu.From.LastName) + " " + tg.Esc("username==@%s", cmu.From.Username) + " " + tg.Esc("id==") + tg.Code("%d", cmu.From.Id) + NL +
+				tg.Bold("from:") + " " + tg.Italic("%s %s", cmu.From.FirstName, cmu.From.LastName) + " " + tg.Esc("username==@%s", cmu.From.Username) + " " + tg.Esc("id==") + tg.Code("%d", cmu.From.Id) + " " + tg.Esc("tg://user?id=%d", cmu.From.Id) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", cmu.From.Id)) + NL +
 				tg.Bold("chat:") + " " + tg.Esc("id==") + tg.Code("%d", cmu.Chat.Id) + tg.Esc(" username: @%s", cmu.Chat.Username) + tg.Esc(" type: %s", cmu.Chat.Type) + tg.Esc(" title==%s", cmu.Chat.Title) + NL +
 				tg.Bold("old member:") + " " + tg.Esc("username==@%s", cmu.OldChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.OldChatMember.User.Id) + tg.Esc(" status==%s", cmu.OldChatMember.Status) + NL +
 				tg.Bold("new member:") + " " + tg.Esc("username==@%s", cmu.NewChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.NewChatMember.User.Id) + tg.Esc(" status==%s", cmu.NewChatMember.Status)
@@ -470,7 +470,7 @@ func processTgUpdates() {
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
 				ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 				Text: tg.Bold("Message") + NL +
-					tg.Bold("from:") + " " + tg.Italic("%s %s", m.From.FirstName, m.From.LastName) + " " + tg.Esc("username==@%s", m.From.Username) + " " + tg.Esc("id==") + tg.Code("%d", m.From.Id) + " " + tg.Esc("tg://user?id=%d", m.From.Id) + NL +
+					tg.Bold("from:") + " " + tg.Italic("%s %s", m.From.FirstName, m.From.LastName) + " " + tg.Esc("username==@%s", m.From.Username) + " " + tg.Esc("id==") + tg.Code("%d", m.From.Id) + " " + tg.Esc("tg://user?id=%d", m.From.Id) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", m.From.Id)) + NL +
 					tg.Bold("chat:") + " " + tg.Esc("username==@%s id==%d type==%s title==%s", m.Chat.Username, m.Chat.Id, m.Chat.Type, m.Chat.Title) + NL +
 					tg.Bold("chat admins:") + " " + tg.Esc("%v", chatadmins) + NL +
 					tg.Bold("text:") + NL +
