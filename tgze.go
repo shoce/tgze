@@ -469,7 +469,7 @@ func processTgUpdates() {
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
 				ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 				Text: tg.Bold("Message") + NL +
-					tg.Bold("from:") + " " + tg.Italic("%s %s", m.From.FirstName, m.From.LastName) + " " + tg.Esc("username==@%s id==%d", m.From.Username, m.From.Id) + NL +
+					tg.Bold("from:") + " " + tg.Italic("%s %s", m.From.FirstName, m.From.LastName) + " " + tg.Esc("username==@%s", m.From.Username) + " " + tg.Esc("id==") + tg.Code("%d", m.From.Id) + " " + tg.Esc("tg://user?id=%d", m.From.Id) + NL +
 					tg.Bold("chat:") + " " + tg.Esc("username==@%s id==%d type==%s title==%s", m.Chat.Username, m.Chat.Id, m.Chat.Type, m.Chat.Title) + NL +
 					tg.Bold("chat admins:") + " " + tg.Esc("%v", chatadmins) + NL +
 					tg.Bold("text:") + NL +
