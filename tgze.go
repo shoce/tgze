@@ -164,6 +164,9 @@ func init() {
 		os.Exit(1)
 	}
 
+	ytdl.VisitorIdMaxAge = 2 * time.Hour
+	YtdlCl = ytdl.Client{HTTPClient: &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtHttpClientUserAgent}}}
+
 	log("FfmpegPath==`%s`", Config.FfmpegPath)
 	log("FfmpegGlobalOptions==%+v", Config.FfmpegGlobalOptions)
 }
@@ -184,7 +187,6 @@ func main() {
 	for {
 		t0 := time.Now()
 
-		YtdlCl = ytdl.Client{HTTPClient: &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtHttpClientUserAgent}}}
 		processTgUpdates()
 
 		if dur := time.Now().Sub(t0); dur < Config.Interval {
@@ -387,27 +389,24 @@ func processTgUpdates() {
 			log("ERROR Config.Put: %s", err)
 		}
 
-		var iseditmessage bool
 		var ischannelpost bool
 		if u.Message.MessageId != 0 {
 			m = u.Message
 		} else if u.EditedMessage.MessageId != 0 {
 			m = u.EditedMessage
-			iseditmessage = true
 		} else if u.ChannelPost.MessageId != 0 {
 			m = u.ChannelPost
 			ischannelpost = true
 		} else if u.EditedChannelPost.MessageId != 0 {
 			m = u.EditedChannelPost
 			ischannelpost = true
-			iseditmessage = true
 		} else if u.MyChatMemberUpdated.Date != 0 {
 			cmu := u.MyChatMemberUpdated
 			report := tg.Bold("MyChatMemberUpdated") + NL +
-				tg.Bold("from:") + tg.Esc(" username==@%s", cmu.From.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.From.Id) + NL +
-				tg.Bold("chat:") + tg.Esc(" id==") + tg.Code("%d", cmu.Chat.Id) + tg.Esc(" username: @%s", cmu.Chat.Username) + tg.Esc(" type: %s", cmu.Chat.Type) + tg.Esc(" title==%s", cmu.Chat.Title) + NL +
-				tg.Bold("old member:") + tg.Esc(" username==@%s", cmu.OldChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.OldChatMember.User.Id) + tg.Esc(" status==%s", cmu.OldChatMember.Status) + NL +
-				tg.Bold("new member:") + tg.Esc(" username==@%s", cmu.NewChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.NewChatMember.User.Id) + tg.Esc(" status==%s", cmu.NewChatMember.Status)
+				tg.Bold("from:") + " " + tg.Italic("%s %s", cmu.From.FirstName, cmu.From.LastName) + " " + tg.Esc("username==@%s", cmu.From.Username) + " " + tg.Esc("id==") + tg.Code("%d", cmu.From.Id) + NL +
+				tg.Bold("chat:") + " " + tg.Esc("id==") + tg.Code("%d", cmu.Chat.Id) + tg.Esc(" username: @%s", cmu.Chat.Username) + tg.Esc(" type: %s", cmu.Chat.Type) + tg.Esc(" title==%s", cmu.Chat.Title) + NL +
+				tg.Bold("old member:") + " " + tg.Esc("username==@%s", cmu.OldChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.OldChatMember.User.Id) + tg.Esc(" status==%s", cmu.OldChatMember.Status) + NL +
+				tg.Bold("new member:") + " " + tg.Esc("username==@%s", cmu.NewChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.NewChatMember.User.Id) + tg.Esc(" status==%s", cmu.NewChatMember.Status)
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
 				ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 				Text:   report,
@@ -470,10 +469,9 @@ func processTgUpdates() {
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
 				ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 				Text: tg.Bold("Message") + NL +
-					tg.Bold("from:") + tg.Esc(" username==@%s id==%d", m.From.Username, m.From.Id) + NL +
-					tg.Bold("chat:") + tg.Esc(" username==@%s id==%d type==%s title==%s", m.Chat.Username, m.Chat.Id, m.Chat.Type, m.Chat.Title) + NL +
-					tg.Bold("chat admins:") + tg.Esc(" %v", chatadmins) + NL +
-					tg.Bold("iseditmessage:") + tg.Esc(" %v", iseditmessage) + NL +
+					tg.Bold("from:") + " " + tg.Italic("%s %s", m.From.FirstName, m.From.LastName) + " " + tg.Esc("username==@%s id==%d", m.From.Username, m.From.Id) + NL +
+					tg.Bold("chat:") + " " + tg.Esc("username==@%s id==%d type==%s title==%s", m.Chat.Username, m.Chat.Id, m.Chat.Type, m.Chat.Title) + NL +
+					tg.Bold("chat admins:") + " " + tg.Esc("%v", chatadmins) + NL +
 					tg.Bold("text:") + NL +
 					tg.Code(m.Text),
 			}); err != nil {
