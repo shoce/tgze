@@ -12,12 +12,12 @@ github.com/go-sourcemap/sourcemap v2.1.4+incompatible h1:a+iTbH5auLKxaNwQFg0B+TC
 github.com/go-sourcemap/sourcemap v2.1.4+incompatible/go.mod h1:F8jJfvm2KbVjc5NqelyYJmf/v5J0dwNLS2mL4sNA1Jg=
 github.com/google/pprof v0.0.0-20250501235452-c0086092b71a h1:rDA3FfmxwXR+BVKKdz55WwMJ1pD2hJQNW31d+l3mPk4=
 github.com/google/pprof v0.0.0-20250501235452-c0086092b71a/go.mod h1:5hDyRhoBCxViHszMt12TnOpEI4VVi+U8Gm9iphldiMA=
+github.com/kkdai/youtube/v2 v2.10.4-0.20250506110307-45565ac0762f h1:a8xU4oOsCszSJtBYtfowelRe+Sr355ywbQLXFJFnidI=
+github.com/kkdai/youtube/v2 v2.10.4-0.20250506110307-45565ac0762f/go.mod h1:pm4RuJ2tRIIaOvz4YMIpCY8Ls4Fm7IVtnZQyule61MU=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/shoce/tg v0.250501.2239 h1:QatPBx6Zx7LCuXr2rD78sk9e895NwDwhzDLlWRbI1ZM=
 github.com/shoce/tg v0.250501.2239/go.mod h1:0DTDEtKAWA6Qmpvm0tscXVmIgu2JNyNMGXP97XxovgY=
-github.com/shoce/youtube/v2 v2.0.0-20250504070453-4efe7e01b32d h1:S2vP3OQs49307a+iKec6bn5L7T0mbFd5t8nl7bxYWN0=
-github.com/shoce/youtube/v2 v2.0.0-20250504070453-4efe7e01b32d/go.mod h1:URVo/D/dZBG30DGpCs/x298+r8r4G2JJbL5T2f7vV9Y=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6 h1:y5zboxd6LQAqYIhHnB48p0ByQ/GnQx2BE33L8BOHQkI=
