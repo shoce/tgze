@@ -12,8 +12,8 @@ github.com/go-sourcemap/sourcemap v2.1.4+incompatible h1:a+iTbH5auLKxaNwQFg0B+TC
 github.com/go-sourcemap/sourcemap v2.1.4+incompatible/go.mod h1:F8jJfvm2KbVjc5NqelyYJmf/v5J0dwNLS2mL4sNA1Jg=
 github.com/google/pprof v0.0.0-20250501235452-c0086092b71a h1:rDA3FfmxwXR+BVKKdz55WwMJ1pD2hJQNW31d+l3mPk4=
 github.com/google/pprof v0.0.0-20250501235452-c0086092b71a/go.mod h1:5hDyRhoBCxViHszMt12TnOpEI4VVi+U8Gm9iphldiMA=
-github.com/kkdai/youtube/v2 v2.10.4-0.20250506110307-45565ac0762f h1:a8xU4oOsCszSJtBYtfowelRe+Sr355ywbQLXFJFnidI=
-github.com/kkdai/youtube/v2 v2.10.4-0.20250506110307-45565ac0762f/go.mod h1:pm4RuJ2tRIIaOvz4YMIpCY8Ls4Fm7IVtnZQyule61MU=
+github.com/kkdai/youtube/v2 v2.10.4 h1:T3VAQ65EB4eHptwcQIigpFvUJlV9EcKRGJJdSVUy3aU=
+github.com/kkdai/youtube/v2 v2.10.4/go.mod h1:pm4RuJ2tRIIaOvz4YMIpCY8Ls4Fm7IVtnZQyule61MU=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/shoce/tg v0.250501.2239 h1:QatPBx6Zx7LCuXr2rD78sk9e895NwDwhzDLlWRbI1ZM=

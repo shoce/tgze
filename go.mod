@@ -3,7 +3,7 @@ module github.com/shoce/tgze
 go 1.24.2
 
 require (
-	github.com/kkdai/youtube/v2 v2.10.4-0.20250506110307-45565ac0762f
+	github.com/kkdai/youtube/v2 v2.10.4
 	github.com/shoce/tg v0.250501.2239
 	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
 	gopkg.in/yaml.v3 v3.0.1
