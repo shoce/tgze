@@ -166,6 +166,7 @@ func init() {
 	}
 
 	ytdl.VisitorIdMaxAge = 2 * time.Hour
+	ytdl.DefaultClient = ytdl.WebClient
 	YtdlCl = ytdl.Client{HTTPClient: &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtHttpClientUserAgent}}}
 
 	log("FfmpegPath==`%s`", Config.FfmpegPath)
