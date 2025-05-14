@@ -92,7 +92,7 @@ type TgZeConfig struct {
 var (
 	Ctx context.Context
 
-	HttpClient = &http.Client{}
+	HttpClient = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtHttpClientUserAgent}}
 
 	Config TgZeConfig
 
@@ -167,7 +167,7 @@ func init() {
 
 	ytdl.VisitorIdMaxAge = 2 * time.Hour
 	ytdl.DefaultClient = ytdl.WebClient
-	YtdlCl = ytdl.Client{HTTPClient: &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtHttpClientUserAgent}}}
+	YtdlCl = ytdl.Client{}
 
 	log("FfmpegPath==`%s`", Config.FfmpegPath)
 	log("FfmpegGlobalOptions==%+v", Config.FfmpegGlobalOptions)
