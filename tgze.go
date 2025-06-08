@@ -4,9 +4,7 @@ https://pkg.go.dev/github.com/kkdai/youtube/v2/
 
 go get github.com/kkdai/youtube/v2@master
 
-GoGet
-GoFmt
-GoBuildNull
+GoGet GoFmt GoBuildNull
 
 */
 
