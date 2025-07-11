@@ -163,9 +163,15 @@ func init() {
 		os.Exit(1)
 	}
 
-	ytdl.VisitorIdMaxAge = 2 * time.Hour
-	ytdl.DefaultClient = ytdl.WebClient
-	YtdlCl = ytdl.Client{}
+	ytdl.VisitorIdMaxAge = 4 * time.Hour
+	YtdlCl = ytdl.Client{
+		HTTPClient: &http.Client{
+			Transport: &UserAgentTransport{
+				http.DefaultTransport,
+				Config.YtHttpClientUserAgent,
+			},
+		},
+	}
 
 	log("FfmpegPath==`%s`", Config.FfmpegPath)
 	log("FfmpegGlobalOptions==%+v", Config.FfmpegGlobalOptions)
