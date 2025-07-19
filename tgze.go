@@ -670,9 +670,11 @@ func processTgUpdates() {
 				}
 			} else {
 				if _, err := tg.SendMessage(tg.SendMessageRequest{
-					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
-					ReplyToMessageId: m.MessageId,
-					Text:             tg.Esc("ERROR %v", postingerr),
+					ChatId: fmt.Sprintf("%d", m.Chat.Id),
+					Text:   tg.Esc("ERROR %v", postingerr),
+
+					ReplyToMessageId:   m.MessageId,
+					LinkPreviewOptions: tg.LinkPreviewOptions{IsDisabled: true},
 				}); err != nil {
 					log("tg.SendMessage: %v", err)
 				}
