@@ -674,7 +674,7 @@ func processTgUpdates() {
 					Text:   tg.Esc("ERROR %v", postingerr),
 
 					ReplyToMessageId:   m.MessageId,
-					LinkPreviewOptions: tg.LinkPreviewOptions{IsDisabled: true},
+					LinkPreviewOptions: tg.LinkPreviewOptions{IsDisabled: false},
 				}); err != nil {
 					log("tg.SendMessage: %v", err)
 				}
