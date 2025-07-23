@@ -629,6 +629,12 @@ func processTgUpdates() {
 
 		if len(videos) > 0 {
 
+			tg.SetMessageReaction(tg.SetMessageReactionRequest{
+				ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+				MessageId: m.MessageId,
+				Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "👾"}},
+			})
+
 			var postingerr error
 			var vinfo *ytdl.Video
 			for _, v := range videos {

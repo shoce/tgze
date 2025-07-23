@@ -18,6 +18,8 @@ github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRI
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/shoce/tg v0.250501.2239 h1:QatPBx6Zx7LCuXr2rD78sk9e895NwDwhzDLlWRbI1ZM=
 github.com/shoce/tg v0.250501.2239/go.mod h1:0DTDEtKAWA6Qmpvm0tscXVmIgu2JNyNMGXP97XxovgY=
+github.com/shoce/tg v0.250724.255 h1:neyeBwFWQRtsm6bHTeHVTXZ2jHSkbCcKkJHw4REN/BY=
+github.com/shoce/tg v0.250724.255/go.mod h1:0DTDEtKAWA6Qmpvm0tscXVmIgu2JNyNMGXP97XxovgY=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 golang.org/x/exp v0.0.0-20250718183923-645b1fa84792 h1:R9PFI6EUdfVKgwKjZef7QIwGcBKu86OEFpJ9nUEP2l4=
