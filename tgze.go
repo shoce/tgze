@@ -939,9 +939,24 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 		}
 		tgaudioCaption += NL + fmt.Sprintf("(transcoded to audio:%dkbps)", targetAudioBitrateKbps)
 		if err := os.Remove(tgaudioFilename); err != nil {
-			log("os.Remove `%s`: %v", tgaudioFilename, err)
+			log("ERROR os.Remove `%s`: %v", tgaudioFilename, err)
 		}
 		tgaudioFilename = filename2
+	}
+
+	var thumbBuf *bytes.Buffer
+	if len(vinfo.Thumbnails) > 0 {
+		var thumb ytdl.Thumbnail
+		for _, t := range vinfo.Thumbnails {
+			if thumb.URL == "" || t.Width < thumb.Width {
+				thumb = t
+			}
+		}
+		thumbBuf, err = downloadFile(thumb.URL)
+		if err != nil {
+			log("ERROR download thumb: %v", err)
+		}
+		log("DEBUG thumb: %dkb", thumbBuf.Len()/1000)
 	}
 
 	tgaudioReader, err := os.Open(tgaudioFilename)
@@ -958,6 +973,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 		Title:     vinfo.Title,
 		Duration:  vinfo.Duration,
 		Audio:     tgaudioReader,
+		Thumb:     thumbBuf,
 	}); err != nil {
 		return fmt.Errorf("tgsendAudioFile: %w", err)
 	}
@@ -1091,6 +1107,23 @@ func FfmpegTranscode(filename, filename2 string, videoBitrateKbps, audioBitrateK
 	log("transcoded in %v", time.Since(t0).Truncate(time.Second))
 
 	return nil
+}
+
+func downloadFile(url string) (*bytes.Buffer, error) {
+	resp, err := HttpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var bb = bytes.NewBuffer(nil)
+
+	_, err = io.Copy(bb, resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return bb, nil
 }
 
 func beats(td time.Duration) int {
