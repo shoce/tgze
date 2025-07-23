@@ -948,7 +948,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	if len(vinfo.Thumbnails) > 0 {
 		var thumb ytdl.Thumbnail
 		for _, t := range vinfo.Thumbnails {
-			if thumb.URL == "" || t.Width < thumb.Width {
+			if t.Width > thumb.Width {
 				thumb = t
 			}
 		}
@@ -956,7 +956,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 		if err != nil {
 			log("ERROR download thumb: %v", err)
 		}
-		log("DEBUG thumb: %dkb", thumbBuf.Len()/1000)
+		log("DEBUG thumb: %dx%d %dkb", thumb.Width, thumb.Height, thumbBuf.Len()/1000)
 	}
 
 	tgaudioReader, err := os.Open(tgaudioFilename)
