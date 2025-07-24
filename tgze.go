@@ -620,41 +620,42 @@ func processTgUpdates() {
 		}
 		prevm = m
 
-		var playlisturl, videourl string
+		var yturl string = ""
+		var islist bool = false
 		if mm := YtListRe.FindStringSubmatch(m.Text); len(mm) > 1 {
-			playlisturl = mm[1]
+			yturl = mm[1]
+			islist = true
 		} else if mm := YtRe.FindStringSubmatch(m.Text); len(mm) > 1 {
-			videourl = mm[1]
+			yturl = mm[1]
 		}
-
-		if playlisturl != "" || videourl != "" {
-			tg.SetMessageReaction(tg.SetMessageReactionRequest{
+		if yturl != "" {
+			if err := tg.SetMessageReaction(tg.SetMessageReactionRequest{
 				ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 				MessageId: m.MessageId,
 				Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "👾"}},
-			})
+			}); err != nil {
+				log("WARN tg.SetMessageReaction: %v", err)
+			}
 		}
 
-		var postingerr error
-		if playlisturl != "" {
+		var postingerr error = nil
+		if islist {
 			var ytlist *YtList
-			ytlist, err = getList(playlisturl)
+			ytlist, err = getList(yturl)
 			if err != nil {
-				log("getList: %v", err)
+				log("WARN getList: %v", err)
 				continue
 			}
 			for _, v := range ytlist.Videos {
 				if err := postAudioVideo(v, ytlist, m, downloadvideo); err != nil {
 					postingerr = err
 					break
-				}
-				if len(ytlist.Videos) > 3 {
+				} else if len(ytlist.Videos) > 3 {
 					time.Sleep(11 * time.Second)
 				}
 			}
-		}
-		if videourl != "" {
-			if err := postAudioVideo(YtVideo{Id: videourl}, nil, m, downloadvideo); err != nil {
+		} else {
+			if err := postAudioVideo(YtVideo{Id: yturl}, nil, m, downloadvideo); err != nil {
 				postingerr = err
 			}
 			if postingerr == nil && ischannelpost {
@@ -662,11 +663,10 @@ func processTgUpdates() {
 					ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 					MessageId: m.MessageId,
 				}); err != nil {
-					log("tg.DeleteMessage: %v", err)
+					log("WARN tg.DeleteMessage: %v", err)
 				}
 			}
 		}
-
 		if postingerr != nil {
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
 				ChatId: fmt.Sprintf("%d", m.Chat.Id),
@@ -675,10 +675,9 @@ func processTgUpdates() {
 				ReplyToMessageId:   m.MessageId,
 				LinkPreviewOptions: tg.LinkPreviewOptions{IsDisabled: false},
 			}); err != nil {
-				log("tg.SendMessage: %v", err)
+				log("WARN tg.SendMessage: %v", err)
 			}
 		}
-
 	}
 
 	return
