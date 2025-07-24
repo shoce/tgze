@@ -298,12 +298,17 @@ type YtPlaylistItems struct {
 	Items []YtPlaylistItem
 }
 
+type YtList struct {
+	Id       string
+	Title    string
+	Size     int64
+	ThumbUrl string
+	Videos   []YtVideo
+}
+
 type YtVideo struct {
 	Id            string
-	PlaylistId    string
 	PlaylistIndex int64
-	PlaylistSize  int64
-	PlaylistTitle string
 }
 
 type UserAgentTransport struct {
@@ -615,84 +620,94 @@ func processTgUpdates() {
 		}
 		prevm = m
 
-		var videos []YtVideo
-
+		var playlisturl, videourl string
 		if mm := YtListRe.FindStringSubmatch(m.Text); len(mm) > 1 {
-			videos, err = getList(mm[1])
-			if err != nil {
-				log("getList: %v", err)
-				continue
-			}
+			playlisturl = mm[1]
 		} else if mm := YtRe.FindStringSubmatch(m.Text); len(mm) > 1 {
-			videos = []YtVideo{YtVideo{Id: mm[1]}}
+			videourl = mm[1]
 		}
 
-		if len(videos) > 0 {
-
+		if playlisturl != "" || videourl != "" {
 			tg.SetMessageReaction(tg.SetMessageReactionRequest{
 				ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 				MessageId: m.MessageId,
 				Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "👾"}},
 			})
+		}
 
-			var postingerr error
-			var vinfo *ytdl.Video
-			for _, v := range videos {
-				vinfo, err = YtdlCl.GetVideoContext(Ctx, v.Id)
-				if err != nil {
-					log("ERROR GetVideoContext: %v", err)
+		var postingerr error
+		if playlisturl != "" {
+			var ytlist *YtList
+			ytlist, err = getList(playlisturl)
+			if err != nil {
+				log("getList: %v", err)
+				continue
+			}
+			for _, v := range ytlist.Videos {
+				if err := postAudioVideo(v, ytlist, m, downloadvideo); err != nil {
 					postingerr = err
 					break
 				}
-
-				if downloadvideo {
-					if err := postVideo(v, vinfo, m); err != nil {
-						log("ERROR postVideo: %v", err)
-						postingerr = err
-						break
-					}
-				} else {
-					if err := postAudio(v, vinfo, m); err != nil {
-						log("ERROR postAudio: %v", err)
-						postingerr = err
-						break
-					}
-				}
-
-				if len(videos) > 3 {
+				if len(ytlist.Videos) > 3 {
 					time.Sleep(11 * time.Second)
 				}
 			}
-
-			if postingerr == nil {
-				if ischannelpost {
-					// TODO do not delete if playlist
-					if err := tg.DeleteMessage(tg.DeleteMessageRequest{
-						ChatId:    fmt.Sprintf("%d", m.Chat.Id),
-						MessageId: m.MessageId,
-					}); err != nil {
-						log("tg.DeleteMessage: %v", err)
-					}
-				}
-			} else {
-				if _, err := tg.SendMessage(tg.SendMessageRequest{
-					ChatId: fmt.Sprintf("%d", m.Chat.Id),
-					Text:   tg.Esc("ERROR %v", postingerr),
-
-					ReplyToMessageId:   m.MessageId,
-					LinkPreviewOptions: tg.LinkPreviewOptions{IsDisabled: false},
+		}
+		if videourl != "" {
+			if err := postAudioVideo(YtVideo{Id: videourl}, nil, m, downloadvideo); err != nil {
+				postingerr = err
+			}
+			if postingerr == nil && ischannelpost {
+				if err := tg.DeleteMessage(tg.DeleteMessageRequest{
+					ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+					MessageId: m.MessageId,
 				}); err != nil {
-					log("tg.SendMessage: %v", err)
+					log("tg.DeleteMessage: %v", err)
 				}
 			}
-
 		}
+
+		if postingerr != nil {
+			if _, err := tg.SendMessage(tg.SendMessageRequest{
+				ChatId: fmt.Sprintf("%d", m.Chat.Id),
+				Text:   tg.Esc("ERROR %v", postingerr),
+
+				ReplyToMessageId:   m.MessageId,
+				LinkPreviewOptions: tg.LinkPreviewOptions{IsDisabled: false},
+			}); err != nil {
+				log("tg.SendMessage: %v", err)
+			}
+		}
+
 	}
 
 	return
 }
 
-func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
+func postAudioVideo(v YtVideo, ytlist *YtList, m tg.Message, downloadvideo bool) error {
+	var err error
+	var vinfo *ytdl.Video
+	vinfo, err = YtdlCl.GetVideoContext(Ctx, v.Id)
+	if err != nil {
+		log("ERROR GetVideoContext: %v", err)
+		return err
+	}
+
+	if downloadvideo {
+		if err := postVideo(v, vinfo, ytlist, m); err != nil {
+			log("ERROR postVideo: %v", err)
+			return err
+		}
+	} else {
+		if err := postAudio(v, vinfo, ytlist, m); err != nil {
+			log("ERROR postAudio: %v", err)
+			return err
+		}
+	}
+	return nil
+}
+
+func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error {
 	var videoFormat, videoSmallestFormat ytdl.Format
 
 	var tgdeleteMessages []tg.DeleteMessageRequest
@@ -763,10 +778,10 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 		vinfo.Title, vinfo.PublishDate.Format("2006/01/02"),
 		v.Id, vinfo.Duration, videoFormat.QualityLabel,
 	)
-	if v.PlaylistId != "" && v.PlaylistTitle != "" {
+	if ytlist.Id != "" && ytlist.Title != "" {
 		tgvideoCaption += NL + fmt.Sprintf(
 			"%d/%d %s ",
-			v.PlaylistIndex+1, v.PlaylistSize, v.PlaylistTitle,
+			v.PlaylistIndex+1, ytlist.Size, ytlist.Title,
 		)
 	}
 
@@ -831,7 +846,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	return nil
 }
 
-func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
+func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error {
 	var audioFormat, audioSmallestFormat ytdl.Format
 
 	var tgdeleteMessages []tg.DeleteMessageRequest
@@ -904,10 +919,10 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 		vinfo.Title, vinfo.PublishDate.Format("2006/01/02"),
 		v.Id, vinfo.Duration, audioFormat.Bitrate/1024,
 	)
-	if v.PlaylistId != "" && v.PlaylistTitle != "" {
+	if ytlist != nil && ytlist.Title != "" {
 		tgaudioCaption += NL + fmt.Sprintf(
 			"%d/%d %s ",
-			v.PlaylistIndex+1, v.PlaylistSize, v.PlaylistTitle,
+			v.PlaylistIndex+1, ytlist.Size, ytlist.Title,
 		)
 	}
 
@@ -988,7 +1003,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, m tg.Message) error {
 	return nil
 }
 
-func getList(ytlistid string) (ytitems []YtVideo, err error) {
+func getList(ytlistid string) (ytlistinfo *YtList, err error) {
 	// https://developers.google.com/youtube/v3/docs/playlists
 	var PlaylistUrl = fmt.Sprintf("https://www.googleapis.com/youtube/v3/playlists?maxResults=%d&part=snippet&id=%s&key=%s", Config.YtMaxResults, ytlistid, Config.YtKey)
 	var playlists YtPlaylists
@@ -1004,9 +1019,26 @@ func getList(ytlistid string) (ytitems []YtVideo, err error) {
 		return nil, fmt.Errorf("more than one (%d) playlists found with provided id %s", len(playlists.Items), ytlistid)
 	}
 
-	log("playlist title: %s", playlists.Items[0].Snippet.Title)
+	list := YtList{
+		Id:    ytlistid,
+		Title: playlists.Items[0].Snippet.Title,
+	}
+	ytlistinfo = &list
+	log("playlist title: %s", ytlistinfo.Title)
 
-	listtitle := playlists.Items[0].Snippet.Title
+	listthumbs := playlists.Items[0].Snippet.Thumbnails
+	if listthumbs.MaxRes.Url != "" {
+		ytlistinfo.ThumbUrl = listthumbs.MaxRes.Url
+	} else if listthumbs.Standard.Url != "" {
+		ytlistinfo.ThumbUrl = listthumbs.Standard.Url
+	} else if listthumbs.High.Url != "" {
+		ytlistinfo.ThumbUrl = listthumbs.High.Url
+	} else if listthumbs.Medium.Url != "" {
+		ytlistinfo.ThumbUrl = listthumbs.Medium.Url
+	} else {
+		log("ERROR no list thumb url")
+	}
+	log("DEBUG list thumb url: %s", ytlistinfo.ThumbUrl)
 
 	var videos []YtPlaylistItemSnippet
 	nextPageToken := ""
@@ -1034,20 +1066,16 @@ func getList(ytlistid string) (ytitems []YtVideo, err error) {
 
 	//sort.Slice(videos, func(i, j int) bool { return videos[i].PublishedAt < videos[j].PublishedAt })
 
-	for _, vid := range videos {
-		ytitems = append(
-			ytitems,
-			YtVideo{
-				Id:            vid.ResourceId.VideoId,
-				PlaylistId:    vid.PlaylistId,
-				PlaylistIndex: vid.Position,
-				PlaylistSize:  int64(len(videos)),
-				PlaylistTitle: listtitle,
-			},
-		)
+	ytlistinfo.Size = int64(len(videos))
+
+	for _, v := range videos {
+		ytlistinfo.Videos = append(ytlistinfo.Videos, YtVideo{
+			Id:            v.ResourceId.VideoId,
+			PlaylistIndex: v.Position,
+		})
 	}
 
-	return ytitems, nil
+	return ytlistinfo, nil
 }
 
 func FfmpegTranscode(filename, filename2 string, videoBitrateKbps, audioBitrateKbps int64) (err error) {
