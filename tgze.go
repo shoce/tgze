@@ -1227,7 +1227,7 @@ func (config *TgZeConfig) Get() error {
 	}
 
 	if config.DEBUG {
-		log("DEBUG Config.Get: %+v", config)
+		//log("DEBUG Config.Get: %+v", config)
 	}
 
 	return nil
@@ -1235,7 +1235,7 @@ func (config *TgZeConfig) Get() error {
 
 func (config *TgZeConfig) Put() error {
 	if config.DEBUG {
-		log("DEBUG Config.Put %s %+v", config.YssUrl, config)
+		//log("DEBUG Config.Put %s %+v", config.YssUrl, config)
 	}
 
 	rbb, err := yaml.Marshal(config)
