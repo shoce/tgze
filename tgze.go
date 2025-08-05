@@ -984,7 +984,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		tgaudioFilename = filename2
 	}
 
-	var thumbBuf *bytes.Buffer
+	var thumbBytes []byte
 	var thumb ytdl.Thumbnail
 	if len(vinfo.Thumbnails) > 0 {
 		for _, t := range vinfo.Thumbnails {
@@ -992,14 +992,14 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 				thumb = t
 			}
 		}
-		thumbBuf, err = downloadFile(thumb.URL)
+		thumbBytes, err = downloadFile(thumb.URL)
 		if err != nil {
 			log("ERROR download thumb: %v", err)
 		}
-		log("DEBUG thumb: %dx%d %dkb", thumb.Width, thumb.Height, thumbBuf.Len()/1000)
+		log("DEBUG thumb: %dx%d %dkb", thumb.Width, thumb.Height, len(thumbBytes)/1000)
 	}
 
-	if thumbImg, thumbImgFmt, err := image.Decode(thumbBuf); err != nil {
+	if thumbImg, thumbImgFmt, err := image.Decode(bytes.NewReader(thumbBytes)); err != nil {
 		log("WARN thumb %s decode: %v", thumb.URL, err)
 	} else {
 		dx, dy := thumbImg.Bounds().Dx(), thumbImg.Bounds().Dy()
@@ -1020,7 +1020,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		Title:     vinfo.Title,
 		Duration:  vinfo.Duration,
 		Audio:     tgaudioReader,
-		Thumb:     thumbBuf,
+		Thumb:     bytes.NewReader(thumbBytes),
 	}); err != nil {
 		return fmt.Errorf("tgsendAudioFile: %w", err)
 	}
@@ -1169,21 +1169,20 @@ func FfmpegTranscode(filename, filename2 string, videoBitrateKbps, audioBitrateK
 	return nil
 }
 
-func downloadFile(url string) (*bytes.Buffer, error) {
+func downloadFile(url string) ([]byte, error) {
 	resp, err := HttpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var bb = bytes.NewBuffer(nil)
+	bb := bytes.NewBuffer(nil)
 
-	_, err = io.Copy(bb, resp.Body)
-	if err != nil {
+	if _, err := io.Copy(bb, resp.Body); err != nil {
 		return nil, err
 	}
 
-	return bb, nil
+	return bb.Bytes(), nil
 }
 
 func beats(td time.Duration) int {
