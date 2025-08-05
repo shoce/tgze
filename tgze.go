@@ -1002,14 +1002,14 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		if err != nil {
 			log("ERROR download thumb: %v", err)
 		}
-		log("DEBUG thumb: %dx%d %dkb", thumb.Width, thumb.Height, len(thumbBytes)>>10)
+		log("DEBUG thumb res <%dx%d> size <%dkb>", thumb.Width, thumb.Height, len(thumbBytes)>>10)
 	}
 
 	if thumbImg, thumbImgFmt, err := image.Decode(bytes.NewReader(thumbBytes)); err != nil {
 		log("WARN thumb %s decode: %v", thumb.URL, err)
 	} else {
 		dx, dy := thumbImg.Bounds().Dx(), thumbImg.Bounds().Dy()
-		log("DEBUG thumb %s fmt:%s size:%dx%d square:%v", thumb.URL, thumbImgFmt, dx, dy, dx == dy)
+		log("DEBUG thumb url [%s] fmt [%s] res <%dx%d>", thumb.URL, thumbImgFmt, dx, dy)
 	}
 
 	tgaudioReader, err := os.Open(tgaudioFilename)
