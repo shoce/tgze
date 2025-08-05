@@ -894,7 +894,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 			continue
 		}
 		flang := strings.ToLower(f.LanguageDisplayName())
-		log("format { ContentLength<%dmb> Language[%#v] AudioTrack{%+v} }", f.ContentLength>>20, flang, f.AudioTrack)
+		log("format size <%dmb> language [%s]", f.ContentLength>>20, flang)
 		if f.AudioTrack != nil && f.AudioTrack.AudioIsDefault == false {
 			continue
 		}
@@ -1002,7 +1002,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		if err != nil {
 			log("ERROR download thumb: %v", err)
 		}
-		log("DEBUG thumb: %dx%d %dkb", thumb.Width, thumb.Height, len(thumbBytes)/1000)
+		log("DEBUG thumb: %dx%d %dkb", thumb.Width, thumb.Height, len(thumbBytes)>>10)
 	}
 
 	if thumbImg, thumbImgFmt, err := image.Decode(bytes.NewReader(thumbBytes)); err != nil {
