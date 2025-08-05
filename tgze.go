@@ -894,18 +894,23 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 			continue
 		}
 		flang := strings.ToLower(f.LanguageDisplayName())
-		log("format { ContentLength<%dmb> Language[%#v] AudioTrack{%#v} }", f.ContentLength>>20, flang, f.AudioTrack)
-		if flang != "" {
-			skip := true
-			for _, l := range Config.YtDownloadLanguages {
-				if strings.Contains(flang, l) {
-					skip = false
+		log("format { ContentLength<%dmb> Language[%#v] AudioTrack{%+v} }", f.ContentLength>>20, flang, f.AudioTrack)
+		if f.AudioTrack != nil && f.AudioTrack.AudioIsDefault == false {
+			continue
+		}
+		/*
+			if flang != "" {
+				skip := true
+				for _, l := range Config.YtDownloadLanguages {
+					if strings.Contains(flang, l) {
+						skip = false
+					}
+				}
+				if skip {
+					continue
 				}
 			}
-			if skip {
-				continue
-			}
-		}
+		*/
 		if audioSmallestFormat.ItagNo == 0 || f.Bitrate < audioSmallestFormat.Bitrate {
 			audioSmallestFormat = f
 		}
