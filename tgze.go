@@ -112,7 +112,7 @@ func init() {
 		log("ERROR YssUrl empty")
 		os.Exit(1)
 	}
-	log("YssUrl==%v", Config.YssUrl)
+	log("YssUrl [%v]", Config.YssUrl)
 
 	if err := Config.Get(); err != nil {
 		log("ERROR Config.Get: %v", err)
@@ -120,10 +120,10 @@ func init() {
 	}
 
 	if Config.DEBUG {
-		log("DEBUG==true")
+		log("DEBUG <true>")
 	}
 
-	log("Interval==%v", Config.Interval)
+	log("Interval <%v>", Config.Interval)
 	if Config.Interval == 0 {
 		log("ERROR Interval empty")
 		os.Exit(1)
@@ -150,7 +150,7 @@ func init() {
 
 	tg.ApiUrl = Config.TgApiUrlBase
 
-	log("TgUpdateLog==%+v", Config.TgUpdateLog)
+	//log("TgUpdateLog %+v", Config.TgUpdateLog)
 
 	if Config.TgCommandChannels == "" {
 		log("ERROR TgCommandChannels empty")
@@ -380,7 +380,7 @@ func processTgUpdates() {
 	}
 
 	for _, u := range uu {
-		log("# UpdateId:%d ", u.UpdateId)
+		log("# UpdateId <%d> ", u.UpdateId)
 		/*
 			if len(TgUpdateLog) > 0 && u.UpdateId < TgUpdateLog[len(TgUpdateLog)-1] {
 				log("WARNING this telegram update id:%d is older than last id:%d, skipping", u.UpdateId, TgUpdateLog[len(TgUpdateLog)-1])
@@ -477,7 +477,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 	}
 
-	log("telegram message from:[%s] chat:[%s] text:[%s]", m.From.Username, m.Chat.Username, m.Text)
+	log("telegram message from [%s] chat [%s] text [%s]", m.From.Username, m.Chat.Username, m.Text)
 	if m.Text == "" {
 		return m, nil
 	}
@@ -754,7 +754,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 			continue
 		}
 		flang := strings.ToLower(f.LanguageDisplayName())
-		log("format: ContentLength:%dmb Language:%#v", f.ContentLength>>20, flang)
+		log("format { ContentLength<%dmb> Language[%#v] }", f.ContentLength>>20, flang)
 		if flang != "" {
 			skip := true
 			for _, l := range Config.YtDownloadLanguages {
@@ -788,7 +788,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	defer ytstream.Close()
 
 	log(
-		"downloading youtu.be/%s video size:%dmb quality:%s bitrate:%dkbps duration:%s language:%#v",
+		"downloading youtu.be/%s video size <%dmb> quality [%s] bitrate <%dkbps> duration <%s> language [%#v]",
 		v.Id,
 		ytstreamsize>>20,
 		videoFormat.QualityLabel,
@@ -881,6 +881,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		}
 	}(&tgdeleteMessages)
 
+	// https://pkg.go.dev/github.com/kkdai/youtube/v2#FormatList
 	for _, f := range vinfo.Formats.WithAudioChannels() {
 		if !strings.Contains(f.MimeType, "/mp4") {
 			continue
@@ -893,7 +894,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 			continue
 		}
 		flang := strings.ToLower(f.LanguageDisplayName())
-		log("format: ContentLength:%dmb Language:%#v", f.ContentLength>>20, flang)
+		log("format { ContentLength<%dmb> Language[%#v] AudioTrack{%#v} }", f.ContentLength>>20, flang, f.AudioTrack)
 		if flang != "" {
 			skip := true
 			for _, l := range Config.YtDownloadLanguages {
@@ -930,7 +931,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	}
 
 	log(
-		"downloading youtu.be/%s audio size:%dmb bitrate:%dkbps duration:%s language:%#v",
+		"downloading youtu.be/%s audio size <%dmb> bitrate <%dkbps> duration <%s> language [%#v]",
 		v.Id,
 		ytstreamsize>>20,
 		audioFormat.Bitrate>>10,
