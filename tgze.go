@@ -760,23 +760,16 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		if !strings.HasPrefix(f.MimeType, "video/mp4") || f.QualityLabel == "" || f.AudioQuality == "" {
 			continue
 		}
-		flang := strings.ToLower(f.LanguageDisplayName())
-		log("format size <%dmb> language [%s]", f.ContentLength>>20, flang)
-		if flang != "" {
-			skip := true
-			for _, l := range Config.YtDownloadLanguages {
-				if strings.Contains(flang, l) {
-					skip = false
-				}
-			}
-			if skip {
-				continue
-			}
+		log("DEBUG format size <%dmb> AudioTrack %+v", f.ContentLength>>20, f.AudioTrack)
+		if f.AudioTrack != nil && !strings.HasSuffix(f.AudioTrack.DisplayName, " original") {
+			continue
 		}
 		if videoSmallestFormat.ItagNo == 0 || f.Bitrate < videoSmallestFormat.Bitrate {
+			log("DEBUG pick")
 			videoSmallestFormat = f
 		}
 		if fsize < Config.TgMaxFileSizeBytes && f.Bitrate > videoFormat.Bitrate {
+			log("DEBUG pick")
 			videoFormat = f
 		}
 	}
@@ -900,28 +893,16 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		if !strings.HasPrefix(f.MimeType, "audio/mp4") {
 			continue
 		}
-		flang := strings.ToLower(f.LanguageDisplayName())
-		log("format size <%dmb> language [%s]", f.ContentLength>>20, flang)
-		if f.AudioTrack != nil && f.AudioTrack.AudioIsDefault == false {
+		log("DEBUG format size <%dmb> AudioTrack %+v", f.ContentLength>>20, f.AudioTrack)
+		if f.AudioTrack != nil && !strings.HasSuffix(f.AudioTrack.DisplayName, " original") {
 			continue
 		}
-		/*
-			if flang != "" {
-				skip := true
-				for _, l := range Config.YtDownloadLanguages {
-					if strings.Contains(flang, l) {
-						skip = false
-					}
-				}
-				if skip {
-					continue
-				}
-			}
-		*/
 		if audioSmallestFormat.ItagNo == 0 || f.Bitrate < audioSmallestFormat.Bitrate {
+			log("DEBUG pick")
 			audioSmallestFormat = f
 		}
 		if fsize < Config.TgMaxFileSizeBytes && f.Bitrate > audioFormat.Bitrate {
+			log("DEBUG pick")
 			audioFormat = f
 		}
 	}
