@@ -27,6 +27,11 @@ jobs:
       - uses: shoce/action-version@v1
 
       - uses: actions/checkout@v4
+      - name: debug
+        run: |
+          pwd
+          ls -l -a
+          env
 
       - uses: docker/setup-buildx-action@v3
 
