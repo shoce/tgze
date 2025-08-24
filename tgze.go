@@ -433,10 +433,10 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	} else if u.MyChatMember.Date != 0 {
 		cmu := u.MyChatMember
 		reporttext := tg.Bold("MyChatMember") + NL +
-			tg.Bold("from:") + " " + tg.Italic("%s %s", cmu.From.FirstName, cmu.From.LastName) + " " + tg.Esc("username==@%s", cmu.From.Username) + " " + tg.Esc("id==") + tg.Code("%d", cmu.From.Id) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", cmu.From.Id)) + NL +
-			tg.Bold("chat:") + " " + tg.Esc("id==") + tg.Code("%d", cmu.Chat.Id) + " " + tg.Esc("username: @%s", cmu.Chat.Username) + " " + tg.Esc("type: %s", cmu.Chat.Type) + " " + tg.Esc("title==%s", cmu.Chat.Title) + NL +
-			tg.Bold("old member:") + " " + tg.Esc("username==@%s", cmu.OldChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.OldChatMember.User.Id) + tg.Esc(" status==%s", cmu.OldChatMember.Status) + NL +
-			tg.Bold("new member:") + " " + tg.Esc("username==@%s", cmu.NewChatMember.User.Username) + tg.Esc(" id==") + tg.Code("%d", cmu.NewChatMember.User.Id) + tg.Esc(" status==%s", cmu.NewChatMember.Status)
+			tg.Bold("from") + " " + tg.Italic("%s %s", cmu.From.FirstName, cmu.From.LastName) + " " + tg.Esc("username @%s", cmu.From.Username) + " " + tg.Esc("id ") + tg.Code("%d", cmu.From.Id) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", cmu.From.Id)) + NL +
+			tg.Bold("chat") + " " + tg.Esc("id ") + tg.Code("%d", cmu.Chat.Id) + " " + tg.Esc("username @%s", cmu.Chat.Username) + " " + tg.Esc("type %s", cmu.Chat.Type) + " " + tg.Esc("title %s", cmu.Chat.Title) + NL +
+			tg.Bold("old member") + " " + tg.Esc("username @%s", cmu.OldChatMember.User.Username) + tg.Esc(" id ") + tg.Code("%d", cmu.OldChatMember.User.Id) + " " + tg.Esc("status %s", cmu.OldChatMember.Status) + NL +
+			tg.Bold("new member") + " " + tg.Esc("username @%s", cmu.NewChatMember.User.Username) + " " + tg.Esc(" id ") + tg.Code("%d", cmu.NewChatMember.User.Id) + " " + tg.Esc("status %s", cmu.NewChatMember.Status)
 		if _, err := tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 			Text:   reporttext,
