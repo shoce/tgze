@@ -194,14 +194,11 @@ func main() {
 		os.Exit(1)
 	}(sigterm)
 
+	ticker := time.NewTicker(Config.Interval)
+
 	for {
-		t0 := time.Now()
-
 		processTgUpdates()
-
-		if dur := time.Now().Sub(t0); dur < Config.Interval {
-			time.Sleep(Config.Interval - dur)
-		}
+		<-ticker.C
 	}
 
 	return
