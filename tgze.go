@@ -188,9 +188,9 @@ func main() {
 		<-sigterm
 		tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
-			Text:   tg.Esc("%s: sigterm", os.Args[0]),
+			Text:   tg.Esc("%s sigterm", os.Args[0]),
 		})
-		log("sigterm received")
+		log("sigterm")
 		os.Exit(1)
 	}(sigterm)
 
