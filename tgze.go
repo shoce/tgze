@@ -342,16 +342,16 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 	var respBody []byte
 	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("io.ReadAll: %w", err)
+		return fmt.Errorf("io.ReadAll %w", err)
 	}
 
 	err = json.NewDecoder(bytes.NewBuffer(respBody)).Decode(target)
 	if err != nil {
-		return fmt.Errorf("json.Decoder.Decode: %w", err)
+		return fmt.Errorf("json.Decoder.Decode %w", err)
 	}
 
 	if Config.DEBUG {
-		log("DEBUG getJson url [%s] response ContentLength <%d>:"+NL+"%s", url, resp.ContentLength, respBody)
+		log("DEBUG getJson url [%s] response ContentLength <%d>"+NL+"%s", url, resp.ContentLength, respBody)
 	}
 	if respjson != nil {
 		*respjson = string(respBody)
@@ -382,7 +382,7 @@ func processTgUpdates() {
 	var tgupdatesjson string
 	uu, tgupdatesjson, err = tg.GetUpdates(updatesoffset)
 	if err != nil {
-		log("ERROR tg.GetUpdates: %v", err)
+		log("ERROR tg.GetUpdates %v", err)
 		os.Exit(1)
 	}
 
@@ -390,7 +390,7 @@ func processTgUpdates() {
 		log("# UpdateId <%d> ", u.UpdateId)
 		/*
 			if len(TgUpdateLog) > 0 && u.UpdateId < TgUpdateLog[len(TgUpdateLog)-1] {
-				log("WARNING this telegram update id:%d is older than last id:%d, skipping", u.UpdateId, TgUpdateLog[len(TgUpdateLog)-1])
+				log("WARNING this telegram update id <%d> is older than last id <%d>, skipping", u.UpdateId, TgUpdateLog[len(TgUpdateLog)-1])
 				continue
 			}
 		*/
@@ -403,12 +403,12 @@ func processTgUpdates() {
 			Config.TgUpdateLog = Config.TgUpdateLog[len(Config.TgUpdateLog)-Config.TgUpdateLogMaxSize:]
 		}
 		if err := Config.Put(); err != nil {
-			log("ERROR Config.Put: %v", err)
+			log("ERROR Config.Put %v", err)
 			return
 		}
 
 		if m, err := processTgUpdate(u, tgupdatesjson); err != nil {
-			log("ERROR processTgUpdate: %v", err)
+			log("ERROR processTgUpdate %v", err)
 			if _, err := tg.SendMessage(tg.SendMessageRequest{
 				ChatId: fmt.Sprintf("%d", m.Chat.Id),
 				Text:   tg.Esc("ERROR %v", err),
@@ -416,7 +416,7 @@ func processTgUpdates() {
 				ReplyToMessageId:   m.MessageId,
 				LinkPreviewOptions: tg.LinkPreviewOptions{IsDisabled: false},
 			}); err != nil {
-				log("WARN tg.SendMessage: %v", err)
+				log("WARN tg.SendMessage %v", err)
 			}
 			return
 		}
@@ -453,12 +453,12 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 		return m, nil
 	} else {
-		log("WARN unsupported type of update id <%d> received:"+NL+"%s", u.UpdateId, tgupdatesjson)
+		log("WARN unsupported type of update id <%d> received"+NL+"%s", u.UpdateId, tgupdatesjson)
 		if _, err := tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 			Text:   tg.Esc("unsupported type of update id:%d received:", u.UpdateId) + NL + tg.Pre(tgupdatesjson),
 		}); err != nil {
-			log("WARN tg.SendMessage: %v", err)
+			log("WARN tg.SendMessage %v", err)
 			return m, err
 		}
 		return m, nil
@@ -515,7 +515,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				tg.Bold("text:") + NL +
 				tg.Code(m.Text),
 		}); err != nil {
-			log("ERROR tg.SendMessage: %v", err)
+			log("ERROR tg.SendMessage %v", err)
 			return m, err
 		}
 	}
@@ -528,7 +528,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				tg.Bold("user id: ") + tg.Code("%d", m.From.Id) + NL +
 				tg.Bold("chat id: ") + tg.Code("%d", m.Chat.Id),
 		}); tgerr != nil {
-			log("ERROR tg.SendMessage: %v", tgerr)
+			log("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
 		return m, nil
@@ -541,7 +541,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				ReplyToMessageId: m.MessageId,
 				Text:             tg.Esc("ERROR %v", err),
 			}); tgerr != nil {
-				log("ERROR tg.SendMessage: %v", tgerr)
+				log("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
 			}
 		} else {
@@ -550,7 +550,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				ReplyToMessageId: m.MessageId,
 				Text:             tg.Link("user profile", fmt.Sprintf("tg://user?id=%d", userid)),
 			}); tgerr != nil {
-				log("ERROR tg.SendMessage: %v", tgerr)
+				log("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
 			}
 		}
@@ -568,9 +568,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				}
 				if _, tgerr2 := tg.SendMessage(tg.SendMessageRequest{
 					ChatId: fmt.Sprintf("%d", m.Chat.Id),
-					Text:   tg.Esc("id:%d err:%v", chatid, tgerr),
+					Text:   tg.Esc("id <%d> err [%v]", chatid, tgerr),
 				}); tgerr2 != nil {
-					log("ERROR tg.SendMessage: %v", tgerr2)
+					log("ERROR tg.SendMessage %v", tgerr2)
 					return m, tgerr2
 				}
 				return m, tgerr
@@ -585,12 +585,12 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 					ChatId: fmt.Sprintf("%d", m.Chat.Id),
 					Text:   chatinfo,
 				}); tgerr != nil {
-					log("ERROR tg.SendMessage: %v", tgerr)
+					log("ERROR tg.SendMessage %v", tgerr)
 					return m, tgerr
 				}
 			}
 		}
-		tgtext := tg.Esc("channels count: %d", channelstotal) + NL
+		tgtext := tg.Esc("channels count <%d>", channelstotal) + NL
 		if channelsremoved > 0 {
 			tgtext += tg.Esc("channels removed: %d", channelsremoved)
 		}
@@ -599,7 +599,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ReplyToMessageId: m.MessageId,
 			Text:             tgtext,
 		}); err != nil {
-			log("ERROR tg.SendMessage: %v", tgerr)
+			log("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
 		return m, nil
@@ -622,7 +622,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ReplyToMessageId: m.MessageId,
 			Text:             tg.Esc("ok for %d of total %d channels.", totalok, total),
 		}); tgerr != nil {
-			log("ERROR tg.SendMessage: %v", tgerr)
+			log("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
 		return m, nil
@@ -633,7 +633,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ChatId: fmt.Sprintf("%d", m.Chat.Id),
 			Text:   tg.Code(Config.TgQuest1Key),
 		}); tgerr != nil {
-			log("ERROR tg.SendMessage: %v", tgerr)
+			log("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
 		return m, nil
@@ -643,7 +643,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ChatId: fmt.Sprintf("%d", m.Chat.Id),
 			Text:   tg.Code(Config.TgQuest2Key),
 		}); tgerr != nil {
-			log("ERROR tg.SendMessage: %v", tgerr)
+			log("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
 		return m, nil
@@ -653,7 +653,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ChatId: fmt.Sprintf("%d", m.Chat.Id),
 			Text:   tg.Code(Config.TgQuest3Key),
 		}); tgerr != nil {
-			log("ERROR tg.SendMessage: %v", tgerr)
+			log("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
 		return m, nil
@@ -686,7 +686,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 	if islist {
 		if ytlist, err := getList(yturl); err != nil {
-			log("ERROR getList: %v", err)
+			log("ERROR getList %v", err)
 			return m, err
 		} else {
 			if _, err := tg.SendPhoto(tg.SendPhotoRequest{
@@ -694,7 +694,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				Photo:   ytlist.ThumbUrl,
 				Caption: tg.Bold(ytlist.Title) + NL + tg.Italic("%d videos", len(ytlist.Videos)) + NL + tg.Link(ytlist.Id, yturl),
 			}); err != nil {
-				log("ERROR tg.SendPhoto: %v", err)
+				log("ERROR tg.SendPhoto %v", err)
 			}
 			for _, v := range ytlist.Videos {
 				if err := postAudioVideo(v, ytlist, m, downloadvideo); err != nil {
@@ -715,7 +715,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 				MessageId: m.MessageId,
 			}); err != nil {
-				log("ERROR tg.DeleteMessage: %v", err)
+				log("ERROR tg.DeleteMessage %v", err)
 			}
 		}
 	}
@@ -728,18 +728,18 @@ func postAudioVideo(v YtVideo, ytlist *YtList, m tg.Message, downloadvideo bool)
 	var vinfo *ytdl.Video
 	vinfo, err = YtdlCl.GetVideoContext(Ctx, v.Id)
 	if err != nil {
-		log("ERROR GetVideoContext: %v", err)
+		log("ERROR GetVideoContext %v", err)
 		return err
 	}
 
 	if downloadvideo {
 		if err := postVideo(v, vinfo, ytlist, m); err != nil {
-			log("ERROR postVideo: %v", err)
+			log("ERROR postVideo %v", err)
 			return err
 		}
 	} else {
 		if err := postAudio(v, vinfo, ytlist, m); err != nil {
-			log("ERROR postAudio: %v", err)
+			log("ERROR postAudio %v", err)
 			return err
 		}
 	}
@@ -795,7 +795,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	defer ytstream.Close()
 
 	log(
-		"downloading youtu.be/%s video size <%dmb> quality [%s] bitrate <%dkbps> duration <%v> language [%s]",
+		"downloading url [youtu.be/%s] video size <%dmb> quality [%s] bitrate <%dkbps> duration <%v> language [%s]",
 		v.Id,
 		ytstreamsize>>20,
 		videoFormat.QualityLabel,
@@ -820,23 +820,23 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	tgvideoFilename := fmt.Sprintf("%s.%s.mp4", ts(), v.Id)
 	tgvideoFile, err := os.OpenFile(tgvideoFilename, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
-		return fmt.Errorf("os.OpenFile: %w", err)
+		return fmt.Errorf("os.OpenFile %w", err)
 	}
 
 	t0 := time.Now()
 	_, err = io.Copy(tgvideoFile, ytstream)
 	if err != nil {
-		return fmt.Errorf("download youtu.be/%s video: %w", v.Id, err)
+		return fmt.Errorf("download youtu.be/%s video %w", v.Id, err)
 	}
 
 	if err := ytstream.Close(); err != nil {
-		log("ERROR ytstream.Close: %v", err)
+		log("ERROR ytstream.Close %v", err)
 	}
 	if err := tgvideoFile.Close(); err != nil {
-		return fmt.Errorf("os.File.Close: %w", err)
+		return fmt.Errorf("os.File.Close %w", err)
 	}
 
-	log("downloaded youtu.be/%s video in %v", v.Id, time.Since(t0).Truncate(time.Second))
+	log("downloaded url [youtu.be/%s] video in <%v>", v.Id, time.Since(t0).Truncate(time.Second))
 
 	if Config.FfmpegPath != "" && targetVideoBitrateKbps > 0 {
 		filename2 := fmt.Sprintf("%s.%s.v%dk.a%dk.mp4", ts(), v.Id, targetVideoBitrateKbps, Config.TgAudioBitrateKbps)
@@ -853,7 +853,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 
 	tgvideoReader, err := os.Open(tgvideoFilename)
 	if err != nil {
-		return fmt.Errorf("os.Open: %w", err)
+		return fmt.Errorf("os.Open %w", err)
 	}
 	defer tgvideoReader.Close()
 
@@ -869,10 +869,10 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	}
 
 	if err := tgvideoReader.Close(); err != nil {
-		log("ERROR os.File.Close: %v", err)
+		log("ERROR os.File.Close %v", err)
 	}
 	if err := os.Remove(tgvideoFilename); err != nil {
-		log("ERROR os.Remove: %v", err)
+		log("ERROR os.Remove %v", err)
 	}
 
 	return nil
@@ -922,18 +922,18 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 
 	ytstream, ytstreamsize, err := YtdlCl.GetStreamContext(Ctx, vinfo, &audioFormat)
 	if err != nil {
-		return fmt.Errorf("GetStreamContext: %w", err)
+		return fmt.Errorf("GetStreamContext %w", err)
 	}
 	defer ytstream.Close()
 
 	if ytstreamsize == 0 {
-		return fmt.Errorf("GetStreamContext: stream size is zero")
+		return fmt.Errorf("GetStreamContext stream size is zero")
 	}
 
 	ytstreamthrottled := &ThrottledReader{Reader: ytstream, Bps: int64(audioFormat.Bitrate) * Config.YtThrottle}
 
 	log(
-		"downloading youtu.be/%s audio size <%dmb> bitrate <%dkbps> duration <%v> language [%s]",
+		"downloading url [youtu.be/%s] audio size <%dmb> bitrate <%dkbps> duration <%v> language [%s]",
 		v.Id,
 		ytstreamsize>>20,
 		audioFormat.Bitrate>>10,
@@ -962,27 +962,27 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 
 	t0 := time.Now()
 	if _, err := io.Copy(tgaudioFile, ytstreamthrottled); err != nil {
-		return fmt.Errorf("download youtu.be/%s audio: %w", v.Id, err)
+		return fmt.Errorf("download youtu.be/%s audio %w", v.Id, err)
 	}
 
 	if err := ytstream.Close(); err != nil {
-		log("ERROR ytstream.Close: %v", err)
+		log("ERROR ytstream.Close %v", err)
 	}
 	if err := tgaudioFile.Close(); err != nil {
-		return fmt.Errorf("os.File.Close: %w", err)
+		return fmt.Errorf("os.File.Close %w", err)
 	}
 
-	log("downloaded youtu.be/%s audio in %v", v.Id, time.Since(t0).Truncate(time.Second))
+	log("downloaded url [youtu.be/%s] audio in <%v>", v.Id, time.Since(t0).Truncate(time.Second))
 
 	if Config.FfmpegPath != "" && targetAudioBitrateKbps > 0 {
 		filename2 := fmt.Sprintf("%s.%s.a%dk.m4a", ts(), v.Id, targetAudioBitrateKbps)
 		err := FfmpegTranscode(tgaudioFilename, filename2, 0, targetAudioBitrateKbps)
 		if err != nil {
-			return fmt.Errorf("FfmpegTranscode `%s`: %w", tgaudioFilename, err)
+			return fmt.Errorf("FfmpegTranscode `%s` %w", tgaudioFilename, err)
 		}
 		tgaudioCaption += NL + fmt.Sprintf("(transcoded to audio:%dkbps)", targetAudioBitrateKbps)
 		if err := os.Remove(tgaudioFilename); err != nil {
-			log("ERROR os.Remove [%s]: %v", tgaudioFilename, err)
+			log("ERROR os.Remove [%s] %v", tgaudioFilename, err)
 		}
 		tgaudioFilename = filename2
 	}
@@ -997,21 +997,20 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		}
 		thumbBytes, err = downloadFile(thumb.URL)
 		if err != nil {
-			log("ERROR download thumb url [%s]: %v", thumb.URL, err)
+			log("ERROR download thumb url [%s] %v", thumb.URL, err)
 		}
-		log("DEBUG thumb res <%dx%d> size <%dkb>", thumb.Width, thumb.Height, len(thumbBytes)>>10)
 	}
 
 	if thumbImg, thumbImgFmt, err := image.Decode(bytes.NewReader(thumbBytes)); err != nil {
-		log("ERROR thumb url [%s] decode: %v", thumb.URL, err)
+		log("ERROR thumb url [%s] decode %v", thumb.URL, err)
 	} else {
 		dx, dy := thumbImg.Bounds().Dx(), thumbImg.Bounds().Dy()
-		log("DEBUG thumb url [%s] fmt [%s] res <%dx%d>", thumb.URL, thumbImgFmt, dx, dy)
+		log("DEBUG thumb url [%s] fmt [%s] size <%dkb> res <%dx%d>", thumb.URL, thumbImgFmt, len(thumbBytes)>>10, dx, dy)
 	}
 
 	tgaudioReader, err := os.Open(tgaudioFilename)
 	if err != nil {
-		return fmt.Errorf("os.Open: %w", err)
+		return fmt.Errorf("os.Open %w", err)
 	}
 	defer tgaudioReader.Close()
 
@@ -1024,14 +1023,14 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		Audio:     tgaudioReader,
 		Thumb:     bytes.NewReader(thumbBytes),
 	}); err != nil {
-		return fmt.Errorf("tgsendAudioFile: %w", err)
+		return fmt.Errorf("tgsendAudioFile %w", err)
 	}
 
 	if err := tgaudioReader.Close(); err != nil {
-		log("ERROR os.File.Close: %v", err)
+		log("ERROR os.File.Close %v", err)
 	}
 	if err := os.Remove(tgaudioFilename); err != nil {
-		log("ERROR os.Remove: %v", err)
+		log("ERROR os.Remove %v", err)
 	}
 
 	return nil
