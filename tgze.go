@@ -769,7 +769,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 			continue
 		}
 		if videoSmallestFormat.ItagNo == 0 || f.Bitrate < videoSmallestFormat.Bitrate {
-			log("DEBUG pick")
+			log("DEBUG pick smallest")
 			videoSmallestFormat = f
 		}
 		if fsize < Config.TgMaxFileSizeBytes && f.Bitrate > videoFormat.Bitrate {
@@ -902,7 +902,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 			continue
 		}
 		if audioSmallestFormat.ItagNo == 0 || f.Bitrate < audioSmallestFormat.Bitrate {
-			log("DEBUG pick")
+			log("DEBUG pick smallest")
 			audioSmallestFormat = f
 		}
 		if fsize < Config.TgMaxFileSizeBytes && f.Bitrate > audioFormat.Bitrate {
