@@ -728,18 +728,15 @@ func postAudioVideo(v YtVideo, ytlist *YtList, m tg.Message, downloadvideo bool)
 	var vinfo *ytdl.Video
 	vinfo, err = YtdlCl.GetVideoContext(Ctx, v.Id)
 	if err != nil {
-		log("ERROR GetVideoContext %v", err)
 		return err
 	}
 
 	if downloadvideo {
 		if err := postVideo(v, vinfo, ytlist, m); err != nil {
-			log("ERROR postVideo %v", err)
 			return err
 		}
 	} else {
 		if err := postAudio(v, vinfo, ytlist, m); err != nil {
-			log("ERROR postAudio %v", err)
 			return err
 		}
 	}
@@ -932,15 +929,6 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 
 	ytstreamthrottled := &ThrottledReader{Reader: ytstream, Bps: int64(audioFormat.Bitrate) * Config.YtThrottle}
 
-	log(
-		"downloading url [youtu.be/%s] audio size <%dmb> bitrate <%dkbps> duration <%v> language [%s]",
-		v.Id,
-		ytstreamsize>>20,
-		audioFormat.Bitrate>>10,
-		vinfo.Duration,
-		audioFormat.LanguageDisplayName(),
-	)
-
 	tgaudioCaption := fmt.Sprintf(
 		"%s %s "+NL+
 			"youtu.be/%s %s %dkbps ",
@@ -957,8 +945,17 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	tgaudioFilename := fmt.Sprintf("%s.%s.m4a", ts(), v.Id)
 	tgaudioFile, err := os.OpenFile(tgaudioFilename, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
-		return fmt.Errorf("create file: %w", err)
+		return fmt.Errorf("create file %w", err)
 	}
+
+	log(
+		"downloading url [youtu.be/%s] audio size <%dmb> bitrate <%dkbps> duration <%v> language [%s]",
+		v.Id,
+		ytstreamsize>>20,
+		audioFormat.Bitrate>>10,
+		vinfo.Duration,
+		audioFormat.LanguageDisplayName(),
+	)
 
 	t0 := time.Now()
 	if _, err := io.Copy(tgaudioFile, ytstreamthrottled); err != nil {
@@ -978,11 +975,11 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		filename2 := fmt.Sprintf("%s.%s.a%dk.m4a", ts(), v.Id, targetAudioBitrateKbps)
 		err := FfmpegTranscode(tgaudioFilename, filename2, 0, targetAudioBitrateKbps)
 		if err != nil {
-			return fmt.Errorf("FfmpegTranscode `%s` %w", tgaudioFilename, err)
+			return fmt.Errorf("FfmpegTranscode %s %w", tgaudioFilename, err)
 		}
 		tgaudioCaption += NL + fmt.Sprintf("(transcoded to audio:%dkbps)", targetAudioBitrateKbps)
 		if err := os.Remove(tgaudioFilename); err != nil {
-			log("ERROR os.Remove [%s] %v", tgaudioFilename, err)
+			log("ERROR os.Remove %s %v", tgaudioFilename, err)
 		}
 		tgaudioFilename = filename2
 	}
