@@ -79,8 +79,9 @@ type TgZeConfig struct {
 
 	YtKey        string `yaml:"YtKey"`
 	YtMaxResults int64  `yaml:"YtMaxResults"` // = 50
+	YtThrottle   int64  `yaml:"YtThrottle"`   // = 12
 
-	YtHttpClientUserAgent string `yaml:"YtHttpClientUserAgent"` // = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15"
+	YtUserAgent string `yaml:"YtUserAgent"` // = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Safari/605.1.15"
 
 	// https://golang.org/s/re2syntax
 	// (?:re)	non-capturing group
@@ -94,7 +95,7 @@ type TgZeConfig struct {
 var (
 	Ctx context.Context
 
-	HttpClient = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtHttpClientUserAgent}}
+	HttpClient = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtUserAgent}}
 
 	Config TgZeConfig
 
@@ -167,12 +168,21 @@ func init() {
 		os.Exit(1)
 	}
 
+	if Config.YtMaxResults == 0 {
+		Config.YtMaxResults = 50
+	}
+
+	if Config.YtThrottle == 0 {
+		Config.YtThrottle = 12
+	}
+	log("YtThrottle <%d>", Config.YtThrottle)
+
 	ytdl.VisitorIdMaxAge = 1 * time.Hour
 	YtdlCl = ytdl.Client{
 		HTTPClient: &http.Client{
 			Transport: &UserAgentTransport{
 				http.DefaultTransport,
-				Config.YtHttpClientUserAgent,
+				Config.YtUserAgent,
 			},
 		},
 	}
@@ -920,6 +930,8 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		return fmt.Errorf("GetStreamContext: stream size is zero")
 	}
 
+	ytstreamthrottled := &ThrottledReader{Reader: ytstream, Bps: int64(audioFormat.Bitrate) * Config.YtThrottle}
+
 	log(
 		"downloading youtu.be/%s audio size <%dmb> bitrate <%dkbps> duration <%v> language [%s]",
 		v.Id,
@@ -949,7 +961,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	}
 
 	t0 := time.Now()
-	if _, err := io.Copy(tgaudioFile, ytstream); err != nil {
+	if _, err := io.Copy(tgaudioFile, ytstreamthrottled); err != nil {
 		return fmt.Errorf("download youtu.be/%s audio: %w", v.Id, err)
 	}
 
@@ -1157,6 +1169,19 @@ func FfmpegTranscode(filename, filename2 string, videoBitrateKbps, audioBitrateK
 	log("DEBUG transcoded in <%v>", time.Since(t0).Truncate(time.Second))
 
 	return nil
+}
+
+type ThrottledReader struct {
+	Reader io.Reader
+	Bps    int64 // bits per second
+}
+
+func (sr *ThrottledReader) Read(p []byte) (int, error) {
+	n, err := sr.Reader.Read(p)
+	if n > 0 && sr.Bps > 0 {
+		time.Sleep(time.Duration(float64(n<<3) / float64(sr.Bps) * float64(time.Second)))
+	}
+	return n, err
 }
 
 func downloadFile(url string) ([]byte, error) {
