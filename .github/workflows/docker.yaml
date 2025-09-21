@@ -53,6 +53,7 @@ jobs:
 
       - name: tag
         run: |
+          git remote -v
           git config user.name github-actions
           git config user.email "github-actions@users.noreply.github.com"
           git tag $VERSION
