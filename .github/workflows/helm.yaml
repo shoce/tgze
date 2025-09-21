@@ -22,7 +22,6 @@ jobs:
 
       - uses: shoce/action-version@v1
 
-      - uses: actions/checkout@v4
 
       - name: chart version
         run: |

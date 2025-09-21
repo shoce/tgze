@@ -26,7 +26,6 @@ jobs:
 
       - uses: shoce/action-version@v1
 
-      - name: debug
         run: |
           pwd
           ls -l -a
