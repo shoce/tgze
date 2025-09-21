@@ -388,7 +388,7 @@ func processTgUpdates() {
 
 	for _, u := range uu {
 		log("# UpdateId <%d>", u.UpdateId)
-		log("# Update [-"+NL+"%#v"+NL+"-]", u)
+		log("# Update %+v", u)
 		/*
 			if len(TgUpdateLog) > 0 && u.UpdateId < TgUpdateLog[len(TgUpdateLog)-1] {
 				log("WARNING this telegram update id <%d> is older than last id <%d>, skipping", u.UpdateId, TgUpdateLog[len(TgUpdateLog)-1])
@@ -485,8 +485,8 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 	}
 
-	log("telegram message [-"+NL+"%#v"+NL+"-]", m)
-	log("telegram message from [%s] chat [%s] text [-"+NL+"%s"+NL+"-]", m.From.Username, m.Chat.Username, m.Text)
+	log("telegram message %+v", m)
+	log("telegram message from [%s] chat [%s] title [%s] text [-"+NL+"%s"+NL+"-]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
 	if m.Text == "" {
 		return m, nil
 	}
