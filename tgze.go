@@ -198,7 +198,7 @@ func main() {
 		<-sigterm
 		tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
-			Text:   tg.Esc("%s sigterm", os.Args[0]),
+			Text:   tg.Esc(tg.F("%s sigterm", os.Args[0])),
 		})
 		log("sigterm")
 		os.Exit(1)
@@ -410,14 +410,12 @@ func processTgUpdates() {
 
 		if m, err := processTgUpdate(u, tgupdatesjson); err != nil {
 			log("ERROR processTgUpdate %v", err)
-			if _, err := tg.SendMessage(tg.SendMessageRequest{
-				ChatId: fmt.Sprintf("%d", m.Chat.Id),
-				Text:   tg.Esc("ERROR %v", err),
-
-				ReplyToMessageId:   m.MessageId,
-				LinkPreviewOptions: tg.LinkPreviewOptions{IsDisabled: false},
-			}); err != nil {
-				log("WARN tg.SendMessage %v", err)
+			if tgerr := tg.SetMessageReaction(tg.SetMessageReactionRequest{
+				ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+				MessageId: m.MessageId,
+				Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "🤬"}},
+			}); tgerr != nil {
+				log("ERROR tg.SetMessageReaction: %v", tgerr)
 			}
 			return
 		}
@@ -441,10 +439,10 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	} else if u.MyChatMember.Date != 0 {
 		cmu := u.MyChatMember
 		reporttext := tg.Bold("MyChatMember") + NL +
-			tg.Bold("from") + " " + tg.Italic("%s %s", cmu.From.FirstName, cmu.From.LastName) + " " + tg.Esc("username @%s", cmu.From.Username) + " " + tg.Esc("id ") + tg.Code("%d", cmu.From.Id) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", cmu.From.Id)) + NL +
-			tg.Bold("chat") + " " + tg.Esc("id ") + tg.Code("%d", cmu.Chat.Id) + " " + tg.Esc("username @%s", cmu.Chat.Username) + " " + tg.Esc("type %s", cmu.Chat.Type) + " " + tg.Esc("title %s", cmu.Chat.Title) + NL +
-			tg.Bold("old member") + " " + tg.Esc("username @%s", cmu.OldChatMember.User.Username) + tg.Esc(" id ") + tg.Code("%d", cmu.OldChatMember.User.Id) + " " + tg.Esc("status %s", cmu.OldChatMember.Status) + NL +
-			tg.Bold("new member") + " " + tg.Esc("username @%s", cmu.NewChatMember.User.Username) + " " + tg.Esc(" id ") + tg.Code("%d", cmu.NewChatMember.User.Id) + " " + tg.Esc("status %s", cmu.NewChatMember.Status)
+			tg.Bold("from") + " " + tg.Italic(tg.F("%s %s", cmu.From.FirstName, cmu.From.LastName)) + " " + tg.Esc(tg.F("username @%s", cmu.From.Username)) + " " + tg.Esc("id ") + tg.Code(tg.F("%d", cmu.From.Id)) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", cmu.From.Id)) + NL +
+			tg.Bold("chat") + " " + tg.Esc("id ") + tg.Code(tg.F("%d", cmu.Chat.Id)) + " " + tg.Esc(tg.F("username @%s", cmu.Chat.Username)) + " " + tg.Esc(tg.F("type %s", cmu.Chat.Type)) + " " + tg.Esc(tg.F("title %s", cmu.Chat.Title)) + NL +
+			tg.Bold("old member") + " " + tg.Esc(tg.F("username @%s", cmu.OldChatMember.User.Username)) + tg.Esc(" id ") + tg.Code(tg.F("%d", cmu.OldChatMember.User.Id)) + " " + tg.Esc(tg.F("status %s", cmu.OldChatMember.Status)) + NL +
+			tg.Bold("new member") + " " + tg.Esc(tg.F("username @%s", cmu.NewChatMember.User.Username)) + " " + tg.Esc(" id ") + tg.Code(tg.F("%d", cmu.NewChatMember.User.Id)) + " " + tg.Esc(tg.F("status %s", cmu.NewChatMember.Status))
 		if _, err := tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 			Text:   reporttext,
@@ -457,7 +455,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		log("WARN unsupported type of update id <%d> received"+NL+"%s", u.UpdateId, tgupdatesjson)
 		if _, err := tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
-			Text:   tg.Esc("unsupported type of update id:%d received:", u.UpdateId) + NL + tg.Pre(tgupdatesjson),
+			Text:   tg.Esc(tg.F("unsupported type of update id <%d> received", u.UpdateId)) + NL + tg.Pre(tgupdatesjson),
 		}); err != nil {
 			log("WARN tg.SendMessage %v", err)
 			return m, err
@@ -511,9 +509,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, err := tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
 			Text: tg.Bold("Message") + NL +
-				tg.Bold("from:") + " " + tg.Italic("%s %s", m.From.FirstName, m.From.LastName) + " " + tg.Esc("username==@%s", m.From.Username) + " " + tg.Esc("id==") + tg.Code("%d", m.From.Id) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", m.From.Id)) + NL +
-				tg.Bold("chat:") + " " + tg.Esc("username=@%s id=%d type=%s title=%s", m.Chat.Username, m.Chat.Id, m.Chat.Type, m.Chat.Title) + NL +
-				tg.Bold("chat admins:") + " " + tg.Esc("%v", chatadmins) + NL +
+				tg.Bold("from:") + " " + tg.Italic(tg.F("%s %s", m.From.FirstName, m.From.LastName)) + " " + tg.Esc(tg.F("username==@%s", m.From.Username)) + " " + tg.Esc("id==") + tg.Code(tg.F("%d", m.From.Id)) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", m.From.Id)) + NL +
+				tg.Bold("chat:") + " " + tg.Esc(tg.F("username=@%s id=%d type=%s title=%s", m.Chat.Username, m.Chat.Id, m.Chat.Type, m.Chat.Title)) + NL +
+				tg.Bold("chat admins:") + " " + tg.Esc(tg.F("%v", chatadmins)) + NL +
 				tg.Bold("text:") + NL +
 				tg.Code(m.Text),
 		}); err != nil {
@@ -527,8 +525,8 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
 			Text: tg.Bold("username: ") + tg.Code(m.From.Username) + NL +
-				tg.Bold("user id: ") + tg.Code("%d", m.From.Id) + NL +
-				tg.Bold("chat id: ") + tg.Code("%d", m.Chat.Id),
+				tg.Bold("user id: ") + tg.Code(tg.F("%d", m.From.Id)) + NL +
+				tg.Bold("chat id: ") + tg.Code(tg.F("%d", m.Chat.Id)),
 		}); tgerr != nil {
 			log("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
@@ -541,7 +539,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text:             tg.Esc("ERROR %v", err),
+				Text:             tg.Esc(tg.F("ERROR %v", err)),
 			}); tgerr != nil {
 				log("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
@@ -570,7 +568,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				}
 				if _, tgerr2 := tg.SendMessage(tg.SendMessageRequest{
 					ChatId: fmt.Sprintf("%d", m.Chat.Id),
-					Text:   tg.Esc("id <%d> err [%v]", chatid, tgerr),
+					Text:   tg.Esc(tg.F("id <%d> err [%v]", chatid, tgerr)),
 				}); tgerr2 != nil {
 					log("ERROR tg.SendMessage %v", tgerr2)
 					return m, tgerr2
@@ -579,7 +577,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			} else {
 				chatinfo := tg.Esc(c.Title) + NL
 				if c.Username != "" {
-					chatinfo += tg.Esc("https://t.me/%s", c.Username)
+					chatinfo += tg.Esc(tg.F("https://t.me/%s", c.Username))
 				} else if c.InviteLink != "" {
 					chatinfo += tg.Esc(c.InviteLink)
 				}
@@ -592,9 +590,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				}
 			}
 		}
-		tgtext := tg.Esc("channels count <%d>", channelstotal) + NL
+		tgtext := tg.Esc(tg.F("channels count <%d>", channelstotal)) + NL
 		if channelsremoved > 0 {
-			tgtext += tg.Esc("channels removed: %d", channelsremoved)
+			tgtext += tg.Esc(tg.F("channels removed count <%d>", channelsremoved))
 		}
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
@@ -622,7 +620,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
-			Text:             tg.Esc("ok for %d of total %d channels.", totalok, total),
+			Text:             tg.Esc(tg.F("ok for <%d> of total <%d> channels.", totalok, total)),
 		}); tgerr != nil {
 			log("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
@@ -694,14 +692,15 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			if _, err := tg.SendPhoto(tg.SendPhotoRequest{
 				ChatId:  fmt.Sprintf("%d", m.Chat.Id),
 				Photo:   ytlist.ThumbUrl,
-				Caption: tg.Bold(ytlist.Title) + NL + tg.Italic("%d videos", len(ytlist.Videos)) + NL + tg.Link(ytlist.Id, yturl),
+				Caption: tg.Bold(ytlist.Title) + NL + tg.Italic(tg.F("<%d> videos", len(ytlist.Videos))) + NL + tg.Link(ytlist.Id, yturl),
 			}); err != nil {
 				log("ERROR tg.SendPhoto %v", err)
 			}
 			for _, v := range ytlist.Videos {
 				if err := postAudioVideo(v, ytlist, m, downloadvideo); err != nil {
 					return m, err
-				} else if len(ytlist.Videos) > 3 {
+				}
+				if len(ytlist.Videos) > 3 {
 					sleepdur := 11 * time.Second
 					log("DEBUG sleeping <%v>", sleepdur)
 					time.Sleep(sleepdur)
