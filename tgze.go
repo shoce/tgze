@@ -387,8 +387,7 @@ func processTgUpdates() {
 	}
 
 	for _, u := range uu {
-		log("# UpdateId <%d>", u.UpdateId)
-		log("# Update %+v", u)
+		log("Update %s", strings.ReplaceAll(tg.F("%+v", u), NL, "<NL>"))
 		/*
 			if len(TgUpdateLog) > 0 && u.UpdateId < TgUpdateLog[len(TgUpdateLog)-1] {
 				log("WARNING this telegram update id <%d> is older than last id <%d>, skipping", u.UpdateId, TgUpdateLog[len(TgUpdateLog)-1])
@@ -483,8 +482,12 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 	}
 
-	log("telegram message %+v", m)
-	log("telegram message from [%s] chat [%s] title [%s] text [-"+NL+"%s"+NL+"-]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
+	log("Update Message %s", strings.ReplaceAll(tg.F("%+v", m), NL, "<NL>"))
+	if !strings.Contains(m.Text, NL) {
+		log("Message from [%s] chat [%s] title [%s] text [%s]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
+	} else {
+		log("Message from [%s] chat [%s] title [%s] text [-"+NL+"%s"+NL+"-]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
+	}
 	if m.Text == "" {
 		return m, nil
 	}
