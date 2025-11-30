@@ -992,7 +992,13 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	var thumb ytdl.Thumbnail
 	if len(vinfo.Thumbnails) > 0 {
 		for _, t := range vinfo.Thumbnails {
+			if Config.DEBUG {
+				log("DEBUG thumb url [%s]", t.URL)
+			}
 			if t.Width > thumb.Width {
+				if Config.DEBUG {
+					log("pick")
+				}
 				thumb = t
 			}
 		}
