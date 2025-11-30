@@ -992,7 +992,13 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	var thumb ytdl.Thumbnail
 	if len(vinfo.Thumbnails) > 0 {
 		for _, t := range vinfo.Thumbnails {
+			if Config.DEBUG {
+				log("DEBUG thumb url [%s]", t.URL)
+			}
 			if t.Width > thumb.Width {
+				if Config.DEBUG {
+					log("pick")
+				}
 				thumb = t
 			}
 		}
@@ -1207,7 +1213,7 @@ func beats(td time.Duration) int {
 func ts() string {
 	tnow := time.Now().In(time.FixedZone("IST", 330*60))
 	return fmt.Sprintf(
-		"%d%02d%02d:%02d%02d+",
+		"%d%02d%02d:%02d%02dॐ",
 		tnow.Year()%1000, tnow.Month(), tnow.Day(),
 		tnow.Hour(), tnow.Minute(),
 	)
