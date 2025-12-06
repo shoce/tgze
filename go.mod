@@ -6,6 +6,7 @@ require (
 	github.com/kkdai/youtube/v2 v2.10.5
 	github.com/shoce/tg v0.251205.1816
 	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39
+	golang.org/x/image v0.33.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

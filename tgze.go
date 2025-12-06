@@ -31,6 +31,8 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	_ "golang.org/x/image/webp"
+
 	ytdl "github.com/kkdai/youtube/v2"
 	"golang.org/x/exp/slices"
 	yaml "gopkg.in/yaml.v3"
