@@ -29,7 +29,7 @@ import (
 
 	"image"
 	_ "image/jpeg"
-	_ "image/png"
+	"image/png"
 
 	_ "golang.org/x/image/webp"
 
@@ -1015,6 +1015,11 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	} else {
 		dx, dy := thumbImg.Bounds().Dx(), thumbImg.Bounds().Dy()
 		log("DEBUG thumb url [%s] fmt [%s] size <%dkb> res <%dx%d>", thumb.URL, thumbImgFmt, len(thumbBytes)>>10, dx, dy)
+		if thumbImgFmt == "webp" {
+			thumbPngBuf := new(bytes.Buffer)
+			png.Encode(thumbPngBuf, thumbImg)
+			thumbBytes = thumbPngBuf.Bytes()
+		}
 	}
 
 	tgaudioReader, err := os.Open(tgaudioFilename)
