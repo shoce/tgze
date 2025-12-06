@@ -3,6 +3,5 @@ name: helm.tgze
 description: Telegram bot to download audios and videos from Youtube
 type: application
 version: __VERSION__
-appVersion: __VERSION__
 home: https://github.com/shoce/tgze/tree/main/helm/
 
