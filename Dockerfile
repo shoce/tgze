@@ -7,18 +7,18 @@ ARG APPNAME
 ENV APPNAME=$APPNAME
 ENV CGO_ENABLED=0
 
-#ARG TARGETARCH
-#
-#RUN apt update
-#RUN apt -y -q install xz-utils
-#
-#RUN mkdir -p /src/ffmpeg/
-#WORKDIR /src/ffmpeg/
-#RUN curl -s -S -L -O https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$TARGETARCH-static.tar.xz
-#RUN tar -x -J -f ffmpeg-release-$TARGETARCH-static.tar.xz
-#RUN mv ffmpeg-*-static/ffmpeg ffmpeg
-#RUN ls -l -a
-#RUN ./ffmpeg -version
+ARG TARGETARCH
+
+RUN apt update
+RUN apt -y -q install xz-utils
+
+RUN mkdir -p /src/ffmpeg/
+WORKDIR /src/ffmpeg/
+RUN curl -s -S -L -O https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$TARGETARCH-static.tar.xz
+RUN tar -x -J -f ffmpeg-release-$TARGETARCH-static.tar.xz
+RUN mv ffmpeg-*-static/ffmpeg ffmpeg
+RUN ls -l -a
+RUN ./ffmpeg -version
 
 RUN mkdir -p /$APPNAME/
 WORKDIR /$APPNAME/
@@ -39,7 +39,7 @@ RUN apk add --no-cache gcompat && ln -s -f -v ld-linux-x86-64.so.2 /lib/libresol
 
 RUN mkdir -p /$APPNAME/
 WORKDIR /$APPNAME/
-#COPY --from=build /$APPNAME/ffmpeg/ffmpeg /bin/ffmpeg
+COPY --from=build /$APPNAME/ffmpeg/ffmpeg /bin/ffmpeg
 COPY --from=build /$APPNAME/$APPNAME /$APPNAME/$APPNAME
 ENTRYPOINT /$APPNAME/$APPNAME
 

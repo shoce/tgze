@@ -209,7 +209,10 @@ func main() {
 	ticker := time.NewTicker(Config.Interval)
 
 	for {
-		processTgUpdates()
+		err := processTgUpdates()
+		if err != nil {
+			perr("ERROR processTgUpdates %v", err)
+		}
 		<-ticker.C
 	}
 
@@ -362,9 +365,7 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 	return nil
 }
 
-func processTgUpdates() {
-	var err error
-
+func processTgUpdates() (err error) {
 	var tgdeleteMessages []tg.DeleteMessageRequest
 	defer func(mm *[]tg.DeleteMessageRequest) {
 		for _, cm := range *mm {
@@ -384,8 +385,7 @@ func processTgUpdates() {
 	var tgupdatesjson string
 	uu, tgupdatesjson, err = tg.GetUpdates(updatesoffset)
 	if err != nil {
-		perr("ERROR tg.GetUpdates %v", err)
-		os.Exit(1)
+		return fmt.Errorf("tg.GetUpdates %v", err)
 	}
 
 	for _, u := range uu {
@@ -405,8 +405,7 @@ func processTgUpdates() {
 			Config.TgUpdateLog = Config.TgUpdateLog[len(Config.TgUpdateLog)-Config.TgUpdateLogMaxSize:]
 		}
 		if err := Config.Put(); err != nil {
-			perr("ERROR Config.Put %v", err)
-			return
+			return fmt.Errorf("Config.Put %v", err)
 		}
 
 		if m, err := processTgUpdate(u, tgupdatesjson); err != nil {
@@ -416,13 +415,13 @@ func processTgUpdates() {
 				MessageId: m.MessageId,
 				Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "🤷‍♂"}},
 			}); tgerr != nil {
-				perr("ERROR tg.SetMessageReaction: %v", tgerr)
+				perr("ERROR tg.SetMessageReaction %v", tgerr)
 			}
-			return
+			return err
 		}
 	}
 
-	return
+	return nil
 }
 
 func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error) {
