@@ -11,8 +11,7 @@ ARG TARGETARCH
 
 RUN mkdir -p /src/ffmpeg/
 WORKDIR /src/ffmpeg/
-RUN curl -s -S -L -O https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$TARGETARCH-static.tar.xz
-RUN tar -x -J -f ffmpeg-release-$TARGETARCH-static.tar.xz
+RUN wget -O- https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$TARGETARCH-static.tar.xz | tar -x -J
 RUN mv ffmpeg-*-static/ffmpeg ffmpeg
 RUN ls -l -a
 RUN ./ffmpeg -version
