@@ -9,9 +9,6 @@ ENV CGO_ENABLED=0
 
 ARG TARGETARCH
 
-RUN apt update
-RUN apt -y -q install xz-utils
-
 RUN mkdir -p /src/ffmpeg/
 WORKDIR /src/ffmpeg/
 RUN curl -s -S -L -O https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$TARGETARCH-static.tar.xz
