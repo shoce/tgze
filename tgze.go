@@ -700,16 +700,40 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
-			Text: tg.Esc(tg.F(
-				"@ReplyToMessage { @MessageId <%d> @From@Username [%s] @Audio {%v} }",
-				m.ReplyToMessage.MessageId,
-				m.ReplyToMessage.From.Username,
-				m.ReplyToMessage.Audio,
-			)),
+			Text: tg.Code(tg.Esc(tg.F(
+				"@ReplyToMessage { @MessageId <%d> @Audio {%v} }",
+				m.ReplyToMessage.MessageId, m.ReplyToMessage.Audio,
+			))),
 		}); tgerr != nil {
 			perr("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
+
+		file, err := tg.GetFile(m.ReplyToMessage.Audio.FileId)
+
+		if err != nil {
+			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+				ReplyToMessageId: m.MessageId,
+				Text:             tg.Esc(tg.F("ERROR GetFile %v", err)),
+			}); tgerr != nil {
+				perr("ERROR tg.SendMessage %v", tgerr)
+				return m, tgerr
+			}
+			return m, nil
+		}
+		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+			ReplyToMessageId: m.MessageId,
+			Text: tg.Code(tg.Esc(tg.F(
+				"File { @FileSize <%d> @FilePath [%s] }",
+				file.FileSize, file.FilePath,
+			))),
+		}); tgerr != nil {
+			perr("ERROR tg.SendMessage %v", tgerr)
+			return m, tgerr
+		}
+
 		return m, nil
 	}
 
