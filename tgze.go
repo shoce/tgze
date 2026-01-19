@@ -734,6 +734,32 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return m, tgerr
 		}
 
+		if file.FileSize > 0 && file.FilePath != "" {
+			filebb, err := downloadFile(Config.TgApiUrlBase + file.FilePath)
+			if err != nil {
+				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+					ReplyToMessageId: m.MessageId,
+					Text:             tg.Esc(tg.F("ERROR downloadFile %v", err)),
+				}); tgerr != nil {
+					perr("ERROR tg.SendMessage %v", tgerr)
+					return m, tgerr
+				}
+				return m, err
+			}
+			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+				ReplyToMessageId: m.MessageId,
+				Text: tg.Code(tg.F(
+					"url [%s] size <%d> downloaded",
+					file.FilePath, len(filebb),
+				)),
+			}); tgerr != nil {
+				perr("ERROR tg.SendMessage %v", tgerr)
+				return m, tgerr
+			}
+		}
+
 		return m, nil
 	}
 
