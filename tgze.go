@@ -674,12 +674,23 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		return m, nil
 	}
 
-	if strings.TrimSpace(m.Text) == Config.TgCommandAudioCompress && ischannelpost {
+	if strings.TrimSpace(m.Text) == Config.TgCommandAudioCompress {
+		if m.ReplyToMessage == nil {
+			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+				ReplyToMessageId: m.MessageId,
+				Text:             tg.Esc("ERROR @ReplyToMessage <nil>"),
+			}); tgerr != nil {
+				perr("ERROR tg.SendMessage %v", tgerr)
+				return m, tgerr
+			}
+			return m, nil
+		}
 		if m.ReplyToMessage.MessageId == 0 {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text:             tg.Esc("ERROR ReplyToMessage @MessageId <0>"),
+				Text:             tg.Esc("ERROR @ReplyToMessage { @MessageId <0> }"),
 			}); tgerr != nil {
 				perr("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
@@ -690,8 +701,10 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
 			Text: tg.Esc(tg.F(
-				"ReplyToMessage @MessageId <%d> @From@Username [%s]",
-				m.ReplyToMessage.MessageId, m.ReplyToMessage.From.Username,
+				"@ReplyToMessage { @MessageId <%d> @From@Username [%s] @Audio {%v} }",
+				m.ReplyToMessage.MessageId,
+				m.ReplyToMessage.From.Username,
+				m.ReplyToMessage.Audio,
 			)),
 		}); tgerr != nil {
 			perr("ERROR tg.SendMessage %v", tgerr)
