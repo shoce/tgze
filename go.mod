@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/kkdai/youtube/v2 v2.10.5
-	github.com/shoce/tg v0.260119.1717
+	github.com/shoce/tg v0.260119.2205
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
 	golang.org/x/image v0.35.0
 	gopkg.in/yaml.v3 v3.0.1
