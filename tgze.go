@@ -701,7 +701,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
 			Text: tg.Code(tg.F(
-				"@ReplyToMessage { @MessageId <%d> @Audio {%v} }",
+				"@ReplyToMessage { @MessageId <%d> @Audio %+v }",
 				m.ReplyToMessage.MessageId, m.ReplyToMessage.Audio,
 			)),
 		}); tgerr != nil {
@@ -726,7 +726,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
 			Text: tg.Code(tg.F(
-				"File { @FileSize <%d> @FilePath [%s] }",
+				"@File { @FileSize <%d> @FilePath [%s] }",
 				file.FileSize, file.FilePath,
 			)),
 		}); tgerr != nil {
