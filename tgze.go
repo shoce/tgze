@@ -45,6 +45,10 @@ const (
 	SPAC = "    "
 
 	BEAT = time.Duration(24) * time.Hour / 1000
+
+	TgCommandChannelsDefault             = "/channels"
+	TgCommandChannelsPromoteAdminDefault = ""
+	TgCommandAudioCompressDefault        = "audio compress"
 )
 
 type TgZeConfig struct {
@@ -63,6 +67,7 @@ type TgZeConfig struct {
 
 	TgCommandChannels             string `yaml:"TgCommandChannels"`
 	TgCommandChannelsPromoteAdmin string `yaml:"TgCommandChannelsPromoteAdmin"`
+	TgCommandAudioCompress        string `yaml:"TgCommandAudioCompress"`
 
 	TgQuest1    string `yaml:"TgQuest1"`
 	TgQuest1Key string `yaml:"TgQuest1Key"`
@@ -156,8 +161,11 @@ func init() {
 	//log("TgUpdateLog %+v", Config.TgUpdateLog)
 
 	if Config.TgCommandChannels == "" {
-		perr("ERROR TgCommandChannels empty")
-		os.Exit(1)
+		Config.TgCommandChannels = TgCommandChannelsDefault
+	}
+
+	if Config.TgCommandAudioCompress == "" {
+		Config.TgCommandAudioCompress = TgCommandAudioCompressDefault
 	}
 
 	if Config.TgCommandChannelsPromoteAdmin == "" {
@@ -425,7 +433,9 @@ func processTgUpdates() (err error) {
 }
 
 func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error) {
+
 	var ischannelpost bool
+
 	if u.Message.MessageId != 0 {
 		m = u.Message
 	} else if u.EditedMessage.MessageId != 0 {
@@ -466,6 +476,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	if m.Chat.Type == "channel" {
 		ischannelpost = true
 	}
+
 	if ischannelpost {
 		savechannel := true
 		for _, i := range Config.TgAllChannelsChatIds {
@@ -487,7 +498,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	if !strings.Contains(m.Text, NL) {
 		perr("Message from [%s] chat [%s] title [%s] text [%s]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
 	} else {
-		perr("Message from [%s] chat [%s] title [%s] text [-"+NL+"%s"+NL+"-]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
+		perr("Message from [%s] chat [%s] title [%s] text [>"+NL+"%s"+NL+"]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
 	}
 	if m.Text == "" {
 		return m, nil
@@ -656,6 +667,32 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", m.Chat.Id),
 			Text:   tg.Code(Config.TgQuest3Key),
+		}); tgerr != nil {
+			perr("ERROR tg.SendMessage %v", tgerr)
+			return m, tgerr
+		}
+		return m, nil
+	}
+
+	if strings.TrimSpace(m.Text) == Config.TgCommandAudioCompress && ischannelpost {
+		if m.ReplyToMessage.MessageId == 0 {
+			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+				ReplyToMessageId: m.MessageId,
+				Text:             tg.Esc("ERROR ReplyToMessage @MessageId <0>"),
+			}); tgerr != nil {
+				perr("ERROR tg.SendMessage %v", tgerr)
+				return m, tgerr
+			}
+			return m, nil
+		}
+		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+			ReplyToMessageId: m.MessageId,
+			Text: tg.Esc(tg.F(
+				"ReplyToMessage @MessageId <%d> @From@Username [%s]",
+				m.ReplyToMessage.MessageId, m.ReplyToMessage.From.Username,
+			)),
 		}); tgerr != nil {
 			perr("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
