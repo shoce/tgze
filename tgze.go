@@ -828,7 +828,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 		if _, err := tg.SendAudioFile(tg.SendAudioFileRequest{
 			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
-			Caption:   m.ReplyToMessage.Text,
+			Caption:   m.ReplyToMessage.Caption,
 			Performer: m.ReplyToMessage.Audio.Performer,
 			Title:     m.ReplyToMessage.Audio.Title,
 			Duration:  time.Duration(m.ReplyToMessage.Audio.Duration) * time.Second, // TODO Audio.Duration time.Duration
