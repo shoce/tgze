@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -735,57 +736,52 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			}
 			return m, nil
 		}
+
+		fileExists := func(path string) bool {
+			_, err := os.Stat(path)
+			if err != nil && errors.Is(err, os.ErrNotExist) {
+				return false
+			}
+			return true
+		}
+
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
 			Text: tg.Code(tg.F(
 				"@File { @FileSize <%d> @FilePath [%s] }",
 				tgfile.FileSize, tgfile.FilePath,
-			)),
+			)) + NL +
+				tg.Code(tg.F("exists <%t>", fileExists(tgfile.FilePath))),
 		}); tgerr != nil {
 			perr("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
 
-		if tgfile.FileSize > 0 && tgfile.FilePath != "" {
-			fileurl := Config.TgApiUrlBase + tgfile.FilePath
-			filebb, err := downloadFile(fileurl)
-			if err != nil {
-				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
-					ReplyToMessageId: m.MessageId,
-					Text:             tg.Esc(tg.F("ERROR downloadFile [%s] %v", fileurl, err)),
-				}); tgerr != nil {
-					perr("ERROR tg.SendMessage %v", tgerr)
-					return m, tgerr
-				}
-				return m, err
-			}
+		if tgfile.FileSize == 0 || tgfile.FilePath == "" || !fileExists(tgfile.FilePath) {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text:             tg.Code(tg.F("downloaded url [%s] size <%d>", fileurl, len(filebb))),
+				Text: tg.Code(tg.F(
+					"path [%s] file not available", tgfile.FilePath,
+				)),
 			}); tgerr != nil {
 				perr("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
 			}
 		}
 
+		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+			ReplyToMessageId: m.MessageId,
+			Text: tg.Code(tg.F(
+				"starting audio compression with filter [%s]", Config.FfmpegAudioCompressFilter,
+			)),
+		}); tgerr != nil {
+			perr("ERROR tg.SendMessage %v", tgerr)
+			return m, tgerr
+		}
 		/*
-			if tgfile.FileSize == 0 || tgfile.FilePath == "" {
-				tgtext := tg.Code(tg.F(
-					"file not available",
-				))
-				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
-					ReplyToMessageId: m.MessageId,
-					Text:             tgtext,
-				}); tgerr != nil {
-					perr("ERROR tg.SendMessage %v", tgerr)
-					return m, tgerr
-				}
-			}
-
 			err := FfmpegAudioCompress(tgfile.FilePath, tgfile.FilePath+".tgze.af.compress)
 		*/
 
