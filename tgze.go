@@ -42,6 +42,7 @@ import (
 )
 
 const (
+	SP   = " "
 	NL   = "\n"
 	SPAC = "    "
 
@@ -709,9 +710,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
-			Text: tg.Code(tg.F(
-				"@ReplyToMessage { @Text [%s] @Audio { @FileId [%s] @FileSize <%d> @MimeType [%s] @Duration <%d> @Performer [%s] @Title [%s] } }",
-				m.ReplyToMessage.Text,
+			Text: tg.Esc(tg.F(
+				"@ReplyToMessage { @Caption [%s] @Audio { @FileId [%s] @FileSize <%d> @MimeType [%s] @Duration <%d> @Performer [%s] @Title [%s] } }",
+				m.ReplyToMessage.Caption,
 				m.ReplyToMessage.Audio.FileId,
 				m.ReplyToMessage.Audio.FileSize,
 				m.ReplyToMessage.Audio.MimeType,
@@ -749,11 +750,13 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
-			Text: tg.Code(tg.F(
+			Text: tg.Esc(tg.F(
 				"@File { @FileSize <%d> @FilePath [%s] }",
 				tgfile.FileSize, tgfile.FilePath,
-			)) + NL +
-				tg.Code(tg.F("exists <%t>", fileExists(tgfile.FilePath))),
+			)) + SP + tg.Esc(tg.F(
+				"exists <%t>",
+				fileExists(tgfile.FilePath),
+			)),
 		}); tgerr != nil {
 			perr("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
@@ -763,7 +766,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text: tg.Code(tg.F(
+				Text: tg.Esc(tg.F(
 					"path [%s] file not available", tgfile.FilePath,
 				)),
 			}); tgerr != nil {
@@ -774,7 +777,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 		filepath2 := tgfile.FilePath + ".audio.compress..m4a"
 
-		if !fileExists(filepath2) {
+		if fileExists(filepath2) {
 
 			filepath2stat, err := os.Stat(filepath2)
 			if err != nil {
@@ -791,7 +794,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text: tg.Code(tg.F(
+				Text: tg.Esc(tg.F(
 					"file [%s] size <%d> already exists", filepath2, filepath2stat.Size(),
 				)),
 			}); tgerr != nil {
@@ -804,7 +807,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text: tg.Code(tg.F(
+				Text: tg.Esc(tg.F(
 					"starting audio compression with filter [%s] into [%s]", Config.FfmpegAudioCompressFilter, filepath2,
 				)),
 			}); tgerr != nil {
@@ -839,7 +842,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text: tg.Code(tg.F(
+				Text: tg.Esc(tg.F(
 					"finished audio compression into [%s] size <%d>", filepath2, filepath2stat.Size(),
 				)),
 			}); tgerr != nil {
@@ -1426,7 +1429,7 @@ func FfmpegAudioCompress(filename, filename2 string) (err error) {
 
 	_, err = io.Copy(os.Stderr, ffmpegCmdStderrPipe)
 	if err != nil {
-		perr("ERROR copy from ffmpeg stderr %v", err)
+		return fmt.Errorf("ffmpeg Copy from stderr %w", err)
 	}
 
 	err = ffmpegCmd.Wait()
