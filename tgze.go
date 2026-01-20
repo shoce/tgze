@@ -81,8 +81,8 @@ type TgZeConfig struct {
 
 	TgAllChannelsChatIds []int64 `yaml:"TgAllChannelsChatIds,flow"`
 
-	TgMaxFileSizeBytes int64 `yaml:"TgMaxFileSizeBytes"` // = 47 << 20
-	TgAudioBitrateKbps int64 `yaml:"TgAudioBitrateKbps"` // = 60
+	TgMaxFileSizeBytes      int64 `yaml:"TgMaxFileSizeBytes"`      // = 47 << 20
+	TgVideoAudioBitrateKbps int64 `yaml:"TgVideoAudioBitrateKbps"` // = 60
 
 	FfmpegPath                string   `yaml:"FfmpegPath"`          // "/bin/ffmpeg"
 	FfmpegGlobalOptions       []string `yaml:"FfmpegGlobalOptions"` // e.g. []string{"-v", "error"}
@@ -710,7 +710,8 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
 			Text: tg.Code(tg.F(
-				"@ReplyToMessage@Audio { @FileId [%s] @FileSize <%d> @MimeType [%s] @Duration <%d> @Performer [%s] @Title [%s] }",
+				"@ReplyToMessage { @Text [%s] @Audio { @FileId [%s] @FileSize <%d> @MimeType [%s] @Duration <%d> @Performer [%s] @Title [%s] } }",
+				m.ReplyToMessage.Text,
 				m.ReplyToMessage.Audio.FileId,
 				m.ReplyToMessage.Audio.FileSize,
 				m.ReplyToMessage.Audio.MimeType,
@@ -818,6 +819,32 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			perr("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
+
+		tgaudioReader, err := os.Open(filepath2)
+		if err != nil {
+			return m, err
+		}
+		defer tgaudioReader.Close()
+
+		if _, err := tg.SendAudioFile(tg.SendAudioFileRequest{
+			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+			Caption:   m.ReplyToMessage.Text,
+			Performer: m.ReplyToMessage.Audio.Performer,
+			Title:     m.ReplyToMessage.Audio.Title,
+			Duration:  time.Duration(m.ReplyToMessage.Audio.Duration) * time.Second, // TODO Audio.Duration time.Duration
+			Audio:     tgaudioReader,
+		}); err != nil {
+			return m, err
+		}
+
+		if err := tgaudioReader.Close(); err != nil {
+			perr("ERROR os.File.Close %v", err)
+		}
+		/*
+			if err := os.Remove(filepath2); err != nil {
+				perr("ERROR os.Remove %v", err)
+			}
+		*/
 
 		return m, nil
 	}
@@ -945,7 +972,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	var targetVideoBitrateKbps int64
 	if videoFormat.ItagNo == 0 {
 		videoFormat = videoSmallestFormat
-		targetVideoSize := int64(Config.TgMaxFileSizeBytes - (Config.TgAudioBitrateKbps*1024*int64(vinfo.Duration.Seconds()+1))/8)
+		targetVideoSize := int64(Config.TgMaxFileSizeBytes - (Config.TgVideoAudioBitrateKbps*1024*int64(vinfo.Duration.Seconds()+1))/8)
 		targetVideoBitrateKbps = int64(((targetVideoSize * 8) / int64(vinfo.Duration.Seconds()+1)) / 1024)
 	}
 
@@ -1000,12 +1027,12 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	perr("downloaded url [youtu.be/%s] video in <%v>", v.Id, time.Since(t0).Truncate(time.Second))
 
 	if Config.FfmpegPath != "" && targetVideoBitrateKbps > 0 {
-		filename2 := fmt.Sprintf("%s.%s.v%dk.a%dk.mp4", ts(), v.Id, targetVideoBitrateKbps, Config.TgAudioBitrateKbps)
-		err := FfmpegTranscode(tgvideoFilename, filename2, targetVideoBitrateKbps, Config.TgAudioBitrateKbps)
+		filename2 := fmt.Sprintf("%s.%s.v%dk.a%dk.mp4", ts(), v.Id, targetVideoBitrateKbps, Config.TgVideoAudioBitrateKbps)
+		err := FfmpegTranscode(tgvideoFilename, filename2, targetVideoBitrateKbps, Config.TgVideoAudioBitrateKbps)
 		if err != nil {
 			return fmt.Errorf("FfmpegTranscode `%s`: %w", tgvideoFilename, err)
 		}
-		tgvideoCaption += NL + fmt.Sprintf("(transcoded to video:%dkbps audio:%dkbps)", targetVideoBitrateKbps, Config.TgAudioBitrateKbps)
+		tgvideoCaption += NL + fmt.Sprintf("(transcoded to video:%dkbps audio:%dkbps)", targetVideoBitrateKbps, Config.TgVideoAudioBitrateKbps)
 		if err := os.Remove(tgvideoFilename); err != nil {
 			perr("ERROR os.Remove [%s] %v", tgvideoFilename, err)
 		}
