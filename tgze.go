@@ -709,8 +709,13 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
 			Text: tg.Code(tg.F(
-				"@ReplyToMessage { @MessageId <%d> @Audio %+v }",
-				m.ReplyToMessage.MessageId, m.ReplyToMessage.Audio,
+				"@ReplyToMessage@Audio { @FileId [%s] @FileSize <%d> @MimeType [%s] @Duration <%d> @Performer [%s] @Title [%s] }",
+				m.ReplyToMessage.Audio.FileId,
+				m.ReplyToMessage.Audio.FileSize,
+				m.ReplyToMessage.Audio.MimeType,
+				m.ReplyToMessage.Audio.Duration,
+				m.ReplyToMessage.Audio.Performer,
+				m.ReplyToMessage.Audio.Title,
 			)),
 		}); tgerr != nil {
 			perr("ERROR tg.SendMessage %v", tgerr)
