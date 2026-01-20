@@ -120,7 +120,7 @@ func init() {
 		perr("ERROR YssUrl empty")
 		os.Exit(1)
 	}
-	perr("YssUrl [%v]", Config.YssUrl)
+	perr("YssUrl [%s]", Config.YssUrl)
 
 	if err := Config.Get(); err != nil {
 		perr("ERROR Config.Get: %v", err)
@@ -155,6 +155,8 @@ func init() {
 	}
 
 	tg.ApiToken = Config.TgToken
+
+	perr("TgApiUrlBase [%s]", Config.TgApiUrlBase)
 
 	tg.ApiUrl = Config.TgApiUrlBase
 
@@ -735,13 +737,14 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 
 		if file.FileSize > 0 && file.FilePath != "" {
-			filebb, err := downloadFile(Config.TgApiUrlBase + file.FilePath)
+			fileurl := tg.F("%s/file/bot%s/%s", Config.TgApiUrlBase, Config.TgToken, file.FilePath)
+			filebb, err := downloadFile(fileurl)
 
 			if err != nil {
 				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 					ReplyToMessageId: m.MessageId,
-					Text:             tg.Esc(tg.F("ERROR downloadFile %v", err)),
+					Text:             tg.Esc(tg.F("ERROR downloadFile [%s] %v", fileurl, err)),
 				}); tgerr != nil {
 					perr("ERROR tg.SendMessage %v", tgerr)
 					return m, tgerr
@@ -750,8 +753,8 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			}
 
 			tgtext := tg.Code(tg.F(
-				"url [%s] size <%d> downloaded",
-				file.FilePath, len(filebb),
+				"downloaded url [%s] size <%d>",
+				fileurl, len(filebb),
 			))
 			if len(filebb) < 600 {
 				tgtext += NL + tg.Code("["+NL+string(filebb)+NL+"]")
