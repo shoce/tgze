@@ -685,45 +685,37 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	}
 
 	if strings.TrimSpace(m.Text) == Config.TgCommandAudioCompress {
-		if m.ReplyToMessage == nil {
+		if m.ReplyToMessage == nil || m.ReplyToMessage.MessageId == 0 {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text:             tg.Esc("ERROR @ReplyToMessage <nil>"),
+				Text:             tg.Esc("ERROR @ReplyToMessage <nil> or @MessageId <0>"),
 			}); tgerr != nil {
 				perr("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
 			}
 			return m, nil
 		}
-		if m.ReplyToMessage.MessageId == 0 {
+
+		/*
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text:             tg.Esc("ERROR @ReplyToMessage { @MessageId <0> }"),
+				Text: tg.Esc(tg.F(
+					"@ReplyToMessage { @Caption [%s] @Audio { @FileId [%s] @FileSize <%d> @MimeType [%s] @Duration <%d> @Performer [%s] @Title [%s] } }",
+					m.ReplyToMessage.Caption,
+					m.ReplyToMessage.Audio.FileId,
+					m.ReplyToMessage.Audio.FileSize,
+					m.ReplyToMessage.Audio.MimeType,
+					m.ReplyToMessage.Audio.Duration,
+					m.ReplyToMessage.Audio.Performer,
+					m.ReplyToMessage.Audio.Title,
+				)),
 			}); tgerr != nil {
 				perr("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
 			}
-			return m, nil
-		}
-		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
-			ReplyToMessageId: m.MessageId,
-			Text: tg.Esc(tg.F(
-				"@ReplyToMessage { @Caption [%s] @Audio { @FileId [%s] @FileSize <%d> @MimeType [%s] @Duration <%d> @Performer [%s] @Title [%s] } }",
-				m.ReplyToMessage.Caption,
-				m.ReplyToMessage.Audio.FileId,
-				m.ReplyToMessage.Audio.FileSize,
-				m.ReplyToMessage.Audio.MimeType,
-				m.ReplyToMessage.Audio.Duration,
-				m.ReplyToMessage.Audio.Performer,
-				m.ReplyToMessage.Audio.Title,
-			)),
-		}); tgerr != nil {
-			perr("ERROR tg.SendMessage %v", tgerr)
-			return m, tgerr
-		}
+		*/
 
 		tgfile, err := tg.GetFile(m.ReplyToMessage.Audio.FileId)
 
@@ -747,20 +739,22 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return true
 		}
 
-		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
-			ReplyToMessageId: m.MessageId,
-			Text: tg.Esc(tg.F(
-				"@File { @FileSize <%d> @FilePath [%s] }",
-				tgfile.FileSize, tgfile.FilePath,
-			)) + SP + tg.Esc(tg.F(
-				"exists <%t>",
-				fileExists(tgfile.FilePath),
-			)),
-		}); tgerr != nil {
-			perr("ERROR tg.SendMessage %v", tgerr)
-			return m, tgerr
-		}
+		/*
+			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+				ReplyToMessageId: m.MessageId,
+				Text: tg.Esc(tg.F(
+					"@File { @FileSize <%d> @FilePath [%s] }",
+					tgfile.FileSize, tgfile.FilePath,
+				)) + SP + tg.Esc(tg.F(
+					"exists <%t>",
+					fileExists(tgfile.FilePath),
+				)),
+			}); tgerr != nil {
+				perr("ERROR tg.SendMessage %v", tgerr)
+				return m, tgerr
+			}
+		*/
 
 		if tgfile.FileSize == 0 || tgfile.FilePath == "" || !fileExists(tgfile.FilePath) {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
@@ -779,28 +773,30 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 		if fileExists(filepath2) {
 
-			filepath2stat, err := os.Stat(filepath2)
-			if err != nil {
-				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
-					ReplyToMessageId: m.MessageId,
-					Text:             tg.Esc(tg.F("ERROR os.Stat [%s] %v", filepath2, err)),
-				}); tgerr != nil {
-					perr("ERROR tg.SendMessage %v", tgerr)
-					return m, tgerr
+			/*
+				filepath2stat, err := os.Stat(filepath2)
+				if err != nil {
+					if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+						ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+						ReplyToMessageId: m.MessageId,
+						Text:             tg.Esc(tg.F("ERROR os.Stat [%s] %v", filepath2, err)),
+					}); tgerr != nil {
+						perr("ERROR tg.SendMessage %v", tgerr)
+						return m, tgerr
+					}
+					return m, err
 				}
-				return m, err
-			}
-			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
-				ReplyToMessageId: m.MessageId,
-				Text: tg.Esc(tg.F(
-					"file [%s] size <%d> already exists", filepath2, filepath2stat.Size(),
-				)),
-			}); tgerr != nil {
-				perr("ERROR tg.SendMessage %v", tgerr)
-				return m, tgerr
-			}
+					if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+						ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+						ReplyToMessageId: m.MessageId,
+						Text: tg.Esc(tg.F(
+							"file [%s] size <%d> already exists", filepath2, filepath2stat.Size(),
+						)),
+					}); tgerr != nil {
+						perr("ERROR tg.SendMessage %v", tgerr)
+						return m, tgerr
+					}
+			*/
 
 		} else {
 
@@ -808,7 +804,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
 				Text: tg.Esc(tg.F(
-					"starting audio compression with filter [%s] into [%s]", Config.FfmpegAudioCompressFilter, filepath2,
+					"starting audio compression with filter [%s] ", Config.FfmpegAudioCompressFilter,
 				)),
 			}); tgerr != nil {
 				perr("ERROR tg.SendMessage %v", tgerr)
@@ -827,28 +823,30 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				return m, err
 			}
 
-			filepath2stat, err := os.Stat(filepath2)
-			if err != nil {
-				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
-					ReplyToMessageId: m.MessageId,
-					Text:             tg.Esc(tg.F("ERROR os.Stat [%s] %v", filepath2, err)),
-				}); tgerr != nil {
-					perr("ERROR tg.SendMessage %v", tgerr)
-					return m, tgerr
+			/*
+				filepath2stat, err := os.Stat(filepath2)
+				if err != nil {
+					if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+						ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+						ReplyToMessageId: m.MessageId,
+						Text:             tg.Esc(tg.F("ERROR os.Stat [%s] %v", filepath2, err)),
+					}); tgerr != nil {
+						perr("ERROR tg.SendMessage %v", tgerr)
+						return m, tgerr
+					}
+					return m, err
 				}
-				return m, err
-			}
-			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
-				ReplyToMessageId: m.MessageId,
-				Text: tg.Esc(tg.F(
-					"finished audio compression into [%s] size <%d>", filepath2, filepath2stat.Size(),
-				)),
-			}); tgerr != nil {
-				perr("ERROR tg.SendMessage %v", tgerr)
-				return m, tgerr
-			}
+					if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+						ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+						ReplyToMessageId: m.MessageId,
+						Text: tg.Esc(tg.F(
+							"finished audio compression into [%s] size <%d>", filepath2, filepath2stat.Size(),
+						)),
+					}); tgerr != nil {
+						perr("ERROR tg.SendMessage %v", tgerr)
+						return m, tgerr
+					}
+			*/
 
 		}
 
@@ -860,7 +858,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 		if _, err := tg.SendAudioFile(tg.SendAudioFileRequest{
 			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
-			Caption:   m.ReplyToMessage.Caption + NL + tg.Italic(tg.Esc("audio-compressed")),
+			Caption:   m.ReplyToMessage.Caption + SP + "audio-compressed",
 			Performer: m.ReplyToMessage.Audio.Performer,
 			Title:     m.ReplyToMessage.Audio.Title,
 			Duration:  time.Duration(m.ReplyToMessage.Audio.Duration) * time.Second, // TODO Audio.Duration time.Duration
