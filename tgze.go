@@ -49,6 +49,8 @@ const (
 	TgCommandChannelsDefault             = "/channels"
 	TgCommandChannelsPromoteAdminDefault = ""
 	TgCommandAudioCompressDefault        = "audio compress"
+
+	FfmpegAudioCompressFilterDefault = "highpass=f=80,acompressor=threshold=-18dB:ratio=4:attack=5:release=100:makeup=6,alimiter=limit=0.95"
 )
 
 type TgZeConfig struct {
@@ -81,8 +83,9 @@ type TgZeConfig struct {
 	TgMaxFileSizeBytes int64 `yaml:"TgMaxFileSizeBytes"` // = 47 << 20
 	TgAudioBitrateKbps int64 `yaml:"TgAudioBitrateKbps"` // = 60
 
-	FfmpegPath          string   `yaml:"FfmpegPath"`          // = "/bin/ffmpeg"
-	FfmpegGlobalOptions []string `yaml:"FfmpegGlobalOptions"` // = []string{"-v", "error"}
+	FfmpegPath                string   `yaml:"FfmpegPath"`          // "/bin/ffmpeg"
+	FfmpegGlobalOptions       []string `yaml:"FfmpegGlobalOptions"` // e.g. []string{"-v", "error"}
+	FfmpegAudioCompressFilter string   `yaml:"FfmpegAudioCompressFilter"`
 
 	YtKey        string `yaml:"YtKey"`
 	YtMaxResults int64  `yaml:"YtMaxResults"` // = 50
@@ -201,6 +204,9 @@ func init() {
 
 	perr("FfmpegPath [%s]", Config.FfmpegPath)
 	perr("FfmpegGlobalOptions (%v)", Config.FfmpegGlobalOptions)
+	if Config.FfmpegAudioCompressFilter == "" {
+		Config.FfmpegAudioCompressFilter = FfmpegAudioCompressFilterDefault
+	}
 }
 
 func main() {
@@ -711,7 +717,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return m, tgerr
 		}
 
-		file, err := tg.GetFile(m.ReplyToMessage.Audio.FileId)
+		tgfile, err := tg.GetFile(m.ReplyToMessage.Audio.FileId)
 
 		if err != nil {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
@@ -729,17 +735,16 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			ReplyToMessageId: m.MessageId,
 			Text: tg.Code(tg.F(
 				"@File { @FileSize <%d> @FilePath [%s] }",
-				file.FileSize, file.FilePath,
+				tgfile.FileSize, tgfile.FilePath,
 			)),
 		}); tgerr != nil {
 			perr("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
 
-		if file.FileSize > 0 && file.FilePath != "" {
-			fileurl := tg.F("%s/file/bot%s/%s", Config.TgApiUrlBase, Config.TgToken, file.FilePath)
+		if tgfile.FileSize > 0 && tgfile.FilePath != "" {
+			fileurl := Config.TgApiUrlBase + tgfile.FilePath
 			filebb, err := downloadFile(fileurl)
-
 			if err != nil {
 				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
@@ -751,23 +756,33 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				}
 				return m, err
 			}
-
-			tgtext := tg.Code(tg.F(
-				"downloaded url [%s] size <%d>",
-				fileurl, len(filebb),
-			))
-			if len(filebb) < 600 {
-				tgtext += NL + tg.Code("["+NL+string(filebb)+NL+"]")
-			}
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text:             tgtext,
+				Text:             tg.Code(tg.F("downloaded url [%s] size <%d>", fileurl, len(filebb))),
 			}); tgerr != nil {
 				perr("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
 			}
 		}
+
+		/*
+			if tgfile.FileSize == 0 || tgfile.FilePath == "" {
+				tgtext := tg.Code(tg.F(
+					"file not available",
+				))
+				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+					ReplyToMessageId: m.MessageId,
+					Text:             tgtext,
+				}); tgerr != nil {
+					perr("ERROR tg.SendMessage %v", tgerr)
+					return m, tgerr
+				}
+			}
+
+			err := FfmpegAudioCompress(tgfile.FilePath, tgfile.FilePath+".tgze.af.compress)
+		*/
 
 		return m, nil
 	}
@@ -1269,28 +1284,66 @@ func FfmpegTranscode(filename, filename2 string, videoBitrateKbps, audioBitrateK
 
 	ffmpegCmdStderrPipe, err := ffmpegCmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("ffmpeg StderrPipe: %w", err)
+		return fmt.Errorf("ffmpeg StderrPipe %w", err)
 	}
 
 	t0 := time.Now()
 	err = ffmpegCmd.Start()
 	if err != nil {
-		return fmt.Errorf("ffmpeg Start: %w", err)
+		return fmt.Errorf("ffmpeg Start %w", err)
 	}
 
-	perr("DEBUG started command `%s`", ffmpegCmd.String())
+	perr("DEBUG started command [%s]", ffmpegCmd.String())
 
 	_, err = io.Copy(os.Stderr, ffmpegCmdStderrPipe)
 	if err != nil {
-		perr("ERROR copy from ffmpeg stderr: %v", err)
+		perr("ERROR copy from ffmpeg stderr %v", err)
 	}
 
 	err = ffmpegCmd.Wait()
 	if err != nil {
-		return fmt.Errorf("ffmpeg Wait: %w", err)
+		return fmt.Errorf("ffmpeg Wait %w", err)
 	}
 
-	perr("DEBUG transcoded in <%v>", time.Since(t0).Truncate(time.Second))
+	perr("DEBUG ffmpeg finished in <%v>", time.Since(t0).Truncate(time.Second))
+
+	return nil
+}
+
+func FfmpegAudioCompress(filename, filename2 string) (err error) {
+	ffmpegArgs := append(
+		Config.FfmpegGlobalOptions,
+		"-i", filename,
+		"-af", Config.FfmpegAudioCompressFilter,
+		filename2,
+	)
+
+	ffmpegCmd := exec.Command(Config.FfmpegPath, ffmpegArgs...)
+
+	ffmpegCmdStderrPipe, err := ffmpegCmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("ffmpeg StderrPipe %w", err)
+	}
+
+	t0 := time.Now()
+	err = ffmpegCmd.Start()
+	if err != nil {
+		return fmt.Errorf("ffmpeg Start %w", err)
+	}
+
+	perr("DEBUG started command [%s]", ffmpegCmd.String())
+
+	_, err = io.Copy(os.Stderr, ffmpegCmdStderrPipe)
+	if err != nil {
+		perr("ERROR copy from ffmpeg stderr %v", err)
+	}
+
+	err = ffmpegCmd.Wait()
+	if err != nil {
+		return fmt.Errorf("ffmpeg Wait %w", err)
+	}
+
+	perr("DEBUG ffmpeg finished in <%v>", time.Since(t0).Truncate(time.Second))
 
 	return nil
 }
