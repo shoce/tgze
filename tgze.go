@@ -734,7 +734,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				perr("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
 			}
-			return m, nil
+			return m, err
 		}
 
 		fileExists := func(path string) bool {
@@ -771,19 +771,53 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			}
 		}
 
+		filepath2 := tgfile.FilePath + ".audio.compress"
+
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
 			Text: tg.Code(tg.F(
-				"starting audio compression with filter [%s]", Config.FfmpegAudioCompressFilter,
+				"starting audio compression with filter [%s] into [%s]", Config.FfmpegAudioCompressFilter, filepath2,
 			)),
 		}); tgerr != nil {
 			perr("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
 		}
-		/*
-			err := FfmpegAudioCompress(tgfile.FilePath, tgfile.FilePath+".tgze.af.compress)
-		*/
+
+		if err := FfmpegAudioCompress(tgfile.FilePath, filepath2); err != nil {
+			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+				ReplyToMessageId: m.MessageId,
+				Text:             tg.Esc(tg.F("ERROR FfmpegAudioCompress %v", err)),
+			}); tgerr != nil {
+				perr("ERROR tg.SendMessage %v", tgerr)
+				return m, tgerr
+			}
+			return m, err
+		}
+
+		filepath2stat, err := os.Stat(filepath2)
+		if err != nil {
+			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+				ReplyToMessageId: m.MessageId,
+				Text:             tg.Esc(tg.F("ERROR os.Stat [%s] %v", filepath2, err)),
+			}); tgerr != nil {
+				perr("ERROR tg.SendMessage %v", tgerr)
+				return m, tgerr
+			}
+			return m, err
+		}
+		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
+			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+			ReplyToMessageId: m.MessageId,
+			Text: tg.Code(tg.F(
+				"finished audio compression into [%s] size <%d>", filepath2, filepath2stat.Size(),
+			)),
+		}); tgerr != nil {
+			perr("ERROR tg.SendMessage %v", tgerr)
+			return m, tgerr
+		}
 
 		return m, nil
 	}
