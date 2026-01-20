@@ -40,6 +40,10 @@ jobs:
           force: true
           chart-folder: helm
 
+      - uses: shoce/action-git-tag@v1
+        env:
+          VERSION: helm-${{ env.VERSION }}
+
       - uses: actions/delete-package-versions@v5
         with:
           package-name: ${{ github.event.repository.name }}/${{ env.HELM_CHART_NAME }}
