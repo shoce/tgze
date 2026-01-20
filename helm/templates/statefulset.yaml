@@ -22,6 +22,13 @@ spec:
         checksum/configmap: {{ include ( print $.Template.BasePath "/" "configmap.yaml" ) . | sha256sum }}
 
     spec:
+
+      volumes:
+        - name: tgbotserver
+          hostPath:
+            path: /opt/tgbotserver/
+            type: DirectoryOrCreate
+
       containers:
 
         - name: tgze
@@ -30,4 +37,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: tgze
+          volumeMounts:
+            - name: tgbotserver
+              mountPath: /tgbotserver/downloads/
 
