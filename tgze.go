@@ -771,7 +771,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			}
 		}
 
-		filepath2 := tgfile.FilePath + ".audio.compress"
+		filepath2 := tgfile.FilePath + ".audio.compress..m4a"
 
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
