@@ -685,7 +685,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	}
 
 	if strings.TrimSpace(m.Text) == Config.TgCommandAudioCompress {
-		perr("TgCommandAudioCompress @ReplyToMessage %v", m.ReplyToMessage)
+
+		perr("TgCommandAudioCompress @ReplyToMessage %#v", m.ReplyToMessage)
+
 		if m.ReplyToMessage == nil || m.ReplyToMessage.MessageId == 0 {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
@@ -699,7 +701,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 
 		perr("TgCommandAudioCompress @ReplyToMessage { @Caption [%s] @Audio { @FileId [%s] @FileSize <%d> @MimeType [%s] @Duration <%d> @Performer [%s] @Title [%s] @Thumb { @FileId [%s] } } }",
-			m.ReplyToMessage.Caption,
+			strings.ReplaceAll(m.ReplyToMessage.Caption, NL, "<NL>"),
 			m.ReplyToMessage.Audio.FileId,
 			m.ReplyToMessage.Audio.FileSize,
 			m.ReplyToMessage.Audio.MimeType,
@@ -714,7 +716,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				ReplyToMessageId: m.MessageId,
 				Text: tg.Esc(tg.F(
 					"@ReplyToMessage { @Caption [%s] @Audio { @FileId [%s] @FileSize <%d> @MimeType [%s] @Duration <%d> @Performer [%s] @Title [%s] @Thumb { @FileId [%s] } } }",
-					m.ReplyToMessage.Caption,
+					strings.ReplaceAll(m.ReplyToMessage.Caption, NL, "<NL>"),
 					m.ReplyToMessage.Audio.FileId,
 					m.ReplyToMessage.Audio.FileSize,
 					m.ReplyToMessage.Audio.MimeType,
