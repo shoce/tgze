@@ -195,6 +195,11 @@ func init() {
 	perr("YtThrottle <%d>", Config.YtThrottle)
 
 	ytdl.VisitorIdMaxAge = 1 * time.Hour
+
+	// https://pkg.go.dev/github.com/kkdai/youtube/v2/#pkg-variables
+	// WebClient AndroidClient IOSClient EmbeddedClient
+	ytdl.DefaultClient = ytdl.IOSClient
+
 	YtdlCl = ytdl.Client{
 		HTTPClient: &http.Client{
 			Transport: &UserAgentTransport{
