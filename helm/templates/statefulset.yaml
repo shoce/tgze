@@ -1,43 +1,43 @@
 ---
 
-apiVersion: apps/v1
-kind: StatefulSet
+apiVersion: "apps/v1"
+kind: "StatefulSet"
 
 metadata:
-  name: tgze
-  namespace: {{ $.Release.Namespace }}
+  name: "tgze"
+  namespace: "{{ $.Release.Namespace }}"
   labels:
-    app: tgze
+    app: "tgze"
 
 spec:
   selector:
     matchLabels:
-      app: tgze
+      app: "tgze"
   template:
     metadata:
-      name: tgze
+      name: "tgze"
       labels:
-        app: tgze
+        app: "tgze"
       annotations:
-        checksum/configmap: {{ include ( print $.Template.BasePath "/" "configmap.yaml" ) . | sha256sum }}
+        checksum/configmap: "{{ include ( print $.Template.BasePath "/" "configmap.yaml" ) . | sha256sum }}"
 
     spec:
 
       volumes:
-        - name: tgbotserver
+        - name: "tgbotserver"
           hostPath:
-            path: /opt/tgbotserver/
-            type: DirectoryOrCreate
+            path: "/opt/tgbotserver/"
+            type: "DirectoryOrCreate"
 
       containers:
 
-        - name: tgze
+        - name: "tgze"
           image: "{{ $.Values.ImageNameGithubTgZe }}:{{ $.Values.ImageTagGithubTgZe }}"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: "IfNotPresent"
           envFrom:
             - configMapRef:
-                name: tgze
+                name: "tgze"
           volumeMounts:
-            - name: tgbotserver
-              mountPath: /tgbotserver/downloads/
+            - name: "tgbotserver"
+              mountPath: "/tgbotserver/downloads/"
 

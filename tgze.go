@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -35,7 +35,6 @@ import (
 	_ "golang.org/x/image/webp"
 
 	ytdl "github.com/kkdai/youtube/v2"
-	"golang.org/x/exp/slices"
 	yaml "gopkg.in/yaml.v3"
 
 	"github.com/shoce/tg"
@@ -128,7 +127,7 @@ func init() {
 	perr("YssUrl [%s]", Config.YssUrl)
 
 	if err := Config.Get(); err != nil {
-		perr("ERROR Config.Get: %v", err)
+		perr("ERROR Config.Get %v", err)
 		os.Exit(1)
 	}
 
@@ -145,12 +144,12 @@ func init() {
 	var err error
 	YtRe, err = regexp.Compile(Config.YtRe)
 	if err != nil {
-		perr("ERROR Compile YtRe [%s]: %v", Config.YtRe, err)
+		perr("ERROR Compile YtRe [%s] %v", Config.YtRe, err)
 		os.Exit(1)
 	}
 	YtListRe, err = regexp.Compile(Config.YtListRe)
 	if err != nil {
-		perr("ERROR Compile YtListRe [%s]: %v", Config.YtListRe, err)
+		perr("ERROR Compile YtListRe [%s] %v", Config.YtListRe, err)
 		os.Exit(1)
 	}
 
@@ -197,6 +196,15 @@ func init() {
 	ytdl.VisitorIdMaxAge = 1 * time.Hour
 
 	// https://pkg.go.dev/github.com/kkdai/youtube/v2/#pkg-variables
+	/*
+		ytdl.IOSClient = ytdl.clientInfo{
+			Name:        "IOS",
+			Version:     "19.49.7",
+			Key:         "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+			UserAgent:   "com.google.ios.youtube/19.49.7 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)",
+			DeviceModel: "iPhone16,2",
+		}
+	*/
 	// WebClient AndroidClient IOSClient EmbeddedClient
 	ytdl.DefaultClient = ytdl.IOSClient
 
@@ -378,9 +386,7 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 		return fmt.Errorf("json.Decoder.Decode %w", err)
 	}
 
-	if Config.DEBUG {
-		perr("DEBUG getJson url [%s] response ContentLength <%d>"+NL+"%s", url, resp.ContentLength, respBody)
-	}
+	perr("DEBUG getJson url [%s] response ContentLength <%d>"+NL+"%s", url, resp.ContentLength, respBody)
 	if respjson != nil {
 		*respjson = string(respBody)
 	}
@@ -501,9 +507,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 		if savechannel {
 			Config.TgAllChannelsChatIds = append(Config.TgAllChannelsChatIds, m.Chat.Id)
-			sort.Slice(Config.TgAllChannelsChatIds, func(i, j int) bool { return Config.TgAllChannelsChatIds[i] < Config.TgAllChannelsChatIds[j] })
+			slices.Sort(Config.TgAllChannelsChatIds)
 			if err := Config.Put(); err != nil {
-				perr("ERROR Config.Put: %v", err)
+				perr("ERROR Config.Put %v", err)
 				return m, err
 			}
 		}
@@ -525,7 +531,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	}
 	var chatadmins string
 	if aa, err := tg.GetChatAdministrators(m.Chat.Id); err != nil {
-		perr("ERROR tggetChatAdministrators: %v", err)
+		perr("ERROR tg.GetChatAdministrators %v", err)
 		return m, err
 	} else {
 		for _, a := range aa {
@@ -919,15 +925,15 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		downloadvideo = true
 	}
 
-	var yturl string
+	var ytid string
 	var islist bool
 	if mm := YtListRe.FindStringSubmatch(m.Text); len(mm) > 1 {
-		yturl = mm[1]
+		ytid = mm[1]
 		islist = true
 	} else if mm := YtRe.FindStringSubmatch(m.Text); len(mm) > 1 {
-		yturl = mm[1]
+		ytid = mm[1]
 	}
-	if yturl == "" {
+	if ytid == "" {
 		return m, nil
 	}
 
@@ -936,18 +942,28 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		MessageId: m.MessageId,
 		Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "👾"}},
 	}); tgerr != nil {
-		perr("ERROR tg.SetMessageReaction: %v", tgerr)
+		perr("ERROR tg.SetMessageReaction %v", tgerr)
+	}
+
+	if len(strings.Fields(m.Text)) == 1 {
+		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
+			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+			MessageId: m.MessageId,
+			Text:      tg.F("youtu.be/%s", ytid),
+		}); tgerr != nil {
+			perr("ERROR tg.EditMessageText %v", tgerr)
+		}
 	}
 
 	if islist {
-		if ytlist, err := getList(yturl); err != nil {
+		if ytlist, err := getList(ytid); err != nil {
 			perr("ERROR getList %v", err)
 			return m, err
 		} else {
 			if _, err := tg.SendPhoto(tg.SendPhotoRequest{
 				ChatId:  fmt.Sprintf("%d", m.Chat.Id),
 				Photo:   ytlist.ThumbUrl,
-				Caption: tg.Bold(ytlist.Title) + NL + tg.Italic(tg.F("<%d> videos", len(ytlist.Videos))) + NL + tg.Link(ytlist.Id, yturl),
+				Caption: tg.Bold(ytlist.Title) + NL + tg.Italic(tg.F("<%d> videos", len(ytlist.Videos))) + NL + tg.Link(ytlist.Id, ytid),
 			}); err != nil {
 				perr("ERROR tg.SendPhoto %v", err)
 			}
@@ -963,7 +979,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			}
 		}
 	} else {
-		if err := postAudioVideo(YtVideo{Id: yturl}, nil, m, downloadvideo); err != nil {
+		if err := postAudioVideo(YtVideo{Id: ytid}, nil, m, downloadvideo); err != nil {
 			return m, err
 		}
 		if ischannelpost {
@@ -1244,13 +1260,9 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	var thumb ytdl.Thumbnail
 	if len(vinfo.Thumbnails) > 0 {
 		for _, t := range vinfo.Thumbnails {
-			if Config.DEBUG {
-				perr("DEBUG thumb url [%s]", t.URL)
-			}
+			perr("DEBUG thumb url [%s]", t.URL)
 			if t.Width > thumb.Width {
-				if Config.DEBUG {
-					perr("pick")
-				}
+				perr("DEBUG pick")
 				thumb = t
 			}
 		}
@@ -1269,9 +1281,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 			thumbPngBuf := new(bytes.Buffer)
 			png.Encode(thumbPngBuf, thumbImg)
 			thumbBytes = thumbPngBuf.Bytes()
-			if Config.DEBUG {
-				perr("DEBUG thumb url [%s] converted to fmt [png] size <%dkb>", thumb.URL, len(thumbBytes)>>10)
-			}
+			perr("DEBUG thumb url [%s] converted to fmt [png] size <%dkb>", thumb.URL, len(thumbBytes)>>10)
 		}
 	}
 
@@ -1365,6 +1375,7 @@ func getList(ytlistid string) (ytlistinfo *YtList, err error) {
 	}
 
 	//sort.Slice(videos, func(i, j int) bool { return videos[i].PublishedAt < videos[j].PublishedAt })
+	//slices.Sort(videos)
 
 	ytlistinfo.Size = int64(len(videos))
 
@@ -1518,7 +1529,16 @@ func ts() string {
 }
 
 func perr(msg string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, ts()+" "+msg+NL, args...)
+	if strings.HasPrefix(msg, "DEBUG ") && !Config.DEBUG {
+		return
+	}
+	msgtext := msg
+	if len(args) > 0 {
+		msgtext = fmt.Sprintf(msgtext, args...)
+	}
+	msgtext = strings.ReplaceAll(msgtext, Config.TgToken, "[Config.TgToken]")
+	msgtext = strings.ReplaceAll(msgtext, Config.YtKey, "[Config.YtKey]")
+	fmt.Fprint(os.Stderr, ts()+SP+msgtext+NL)
 }
 
 func (config *TgZeConfig) Get() error {
@@ -1544,17 +1564,13 @@ func (config *TgZeConfig) Get() error {
 		return err
 	}
 
-	if config.DEBUG {
-		//perr("DEBUG Config.Get: %+v", config)
-	}
+	//perr("DEBUG Config.Get %+v", config)
 
 	return nil
 }
 
 func (config *TgZeConfig) Put() error {
-	if config.DEBUG {
-		//perr("DEBUG Config.Put url [%s] %+v", config.YssUrl, config)
-	}
+	//perr("DEBUG Config.Put url [%s] %+v", config.YssUrl, config)
 
 	rbb, err := yaml.Marshal(config)
 	if err != nil {
