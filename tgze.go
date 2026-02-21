@@ -398,12 +398,9 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 
 func processTgUpdates() (err error) {
 	var tgdeleteMessages []tg.DeleteMessageRequest
-	defer func(mm *[]tg.DeleteMessageRequest) {
-		for _, cm := range *mm {
-			tg.DeleteMessage(tg.DeleteMessageRequest{
-				ChatId:    cm.ChatId,
-				MessageId: cm.MessageId,
-			})
+	defer func(dmrr *[]tg.DeleteMessageRequest) {
+		for _, dmr := range *dmrr {
+			tg.DeleteMessage(dmr)
 		}
 	}(&tgdeleteMessages)
 
@@ -470,6 +467,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		m = u.EditedChannelPost
 		ischannelpost = true
 	} else if u.MyChatMember.Date != 0 {
+
 		cmu := u.MyChatMember
 		reporttext := tg.Bold("MyChatMember") + NL +
 			tg.Bold("from") + " " + tg.Italic(tg.F("%s %s", cmu.From.FirstName, cmu.From.LastName)) + " " + tg.Esc(tg.F("username @%s", cmu.From.Username)) + " " + tg.Esc("id ") + tg.Code(tg.F("%d", cmu.From.Id)) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", cmu.From.Id)) + NL +
@@ -484,7 +482,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return m, err
 		}
 		return m, nil
+
 	} else {
+
 		perr("WARN unsupported type of update id <%d> received"+NL+"%s", u.UpdateId, tgupdatesjson)
 		if _, err := tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
@@ -496,6 +496,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return m, err
 		}
 		return m, nil
+
 	}
 
 	if m.Chat.Type == "channel" {
@@ -519,12 +520,13 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 	}
 
-	perr("Update Message %s", strings.ReplaceAll(tg.F("%+v", m), NL, "<NL>"))
+	perr("Update @Message %s", strings.ReplaceAll(tg.F("%+v", m), NL, "<NL>"))
 	if !strings.Contains(m.Text, NL) {
 		perr("Message from [%s] chat [%s] title [%s] text [%s]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
 	} else {
 		perr("Message from [%s] chat [%s] title [%s] text [>"+NL+"%s"+NL+"]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
 	}
+
 	if m.Text == "" {
 		return m, nil
 	}
@@ -560,7 +562,10 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 	}
 
-	if strings.TrimSpace(m.Text) == "/id" {
+	mtff := strings.Fields(m.Text)
+
+	if len(mtff) == 1 && mtff[0] == "/id" {
+
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
@@ -572,10 +577,12 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return m, tgerr
 		}
 		return m, nil
+
 	}
 
-	if mff := strings.Fields(m.Text); len(mff) == 2 && mff[0] == "/id" {
-		if userid, err := strconv.ParseInt(mff[1], 10, 64); err != nil {
+	if len(mtff) == 2 && mtff[0] == "/id" {
+
+		if userid, err := strconv.ParseInt(mtff[1], 10, 64); err != nil {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
@@ -594,9 +601,11 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				return m, tgerr
 			}
 		}
+
 	}
 
 	if strings.TrimSpace(m.Text) == Config.TgCommandChannels {
+
 		var channelstotal, channelsremoved int
 		channelstotal = len(Config.TgAllChannelsChatIds)
 		for _, chatid := range Config.TgAllChannelsChatIds {
@@ -651,9 +660,11 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return m, tgerr
 		}
 		return m, nil
+
 	}
 
 	if strings.TrimSpace(m.Text) == Config.TgCommandChannelsPromoteAdmin {
+
 		var total, totalok int
 		for _, i := range Config.TgAllChannelsChatIds {
 			success, err := tg.PromoteChatMember(fmt.Sprintf("%d", i), fmt.Sprintf("%d", m.From.Id))
@@ -676,6 +687,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return m, tgerr
 		}
 		return m, nil
+
 	}
 
 	if strings.TrimSpace(m.Text) == Config.TgQuest1 {
@@ -772,14 +784,6 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return m, err
 		}
 
-		fileExists := func(path string) bool {
-			_, err := os.Stat(path)
-			if err != nil && errors.Is(err, os.ErrNotExist) {
-				return false
-			}
-			return true
-		}
-
 		/*
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
@@ -858,7 +862,8 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				return m, tgerr
 			}
 
-			if err := FfmpegAudioCompress(tgaudiofile.FilePath, filepath2); err != nil {
+			err := FfmpegAudioCompress(tgaudiofile.FilePath, filepath2)
+			if err != nil {
 				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 					ReplyToMessageId: m.MessageId,
@@ -929,31 +934,43 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			return m, err
 		}
 
-		if err := tgaudioReader.Close(); err != nil {
+		err = tgaudioReader.Close()
+		if err != nil {
 			perr("ERROR os.File.Close %v", err)
 		}
 		/*
-			if err := os.Remove(filepath2); err != nil {
+			err := os.Remove(filepath2)
+			if err != nil {
 				perr("ERROR os.Remove %v", err)
 			}
 		*/
 
 		return m, nil
+
 	}
 
 	var downloadvideo bool
-	if strings.HasPrefix(strings.ToLower(m.Text), "video ") || strings.HasSuffix(strings.ToLower(m.Text), " video") || strings.HasPrefix(strings.ToLower(m.Chat.Title), "vi") {
+	if len(mtff) > 1 && (strings.ToLower(mtff[0]) == "video" || strings.ToLower(mtff[len(mtff)-1]) == "video") {
+		downloadvideo = true
+	}
+	if strings.HasPrefix(strings.ToLower(m.Chat.Title), "v") {
 		downloadvideo = true
 	}
 
 	var ytid string
-	var islist bool
+	var isytlist bool
+
 	if mm := YtListRe.FindStringSubmatch(m.Text); len(mm) > 1 {
+
 		ytid = mm[1]
-		islist = true
+		isytlist = true
+
 	} else if mm := YtRe.FindStringSubmatch(m.Text); len(mm) > 1 {
+
 		ytid = mm[1]
+
 	}
+
 	if ytid == "" {
 		return m, nil
 	}
@@ -966,7 +983,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		perr("ERROR tg.SetMessageReaction %v", tgerr)
 	}
 
-	if len(strings.Fields(m.Text)) == 1 && !islist {
+	if len(strings.Fields(m.Text)) == 1 && !isytlist {
 		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
 			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 			MessageId: m.MessageId,
@@ -978,11 +995,13 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 	}
 
-	if islist {
+	if isytlist {
+
 		if ytlist, err := getList(ytid); err != nil {
 			perr("ERROR getList %v", err)
 			return m, err
 		} else {
+
 			if _, err := tg.SendPhoto(tg.SendPhotoRequest{
 				ChatId:  fmt.Sprintf("%d", m.Chat.Id),
 				Photo:   ytlist.ThumbUrl,
@@ -990,6 +1009,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			}); err != nil {
 				perr("ERROR tg.SendPhoto %v", err)
 			}
+
 			for _, v := range ytlist.Videos {
 				if err := postAudioVideo(v, ytlist, m, downloadvideo); err != nil {
 					return m, err
@@ -1000,18 +1020,25 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 					time.Sleep(sleepdur)
 				}
 			}
+
 		}
+
 	} else {
-		if err := postAudioVideo(YtVideo{Id: ytid}, nil, m, downloadvideo); err != nil {
+
+		err := postAudioVideo(YtVideo{Id: ytid}, nil, m, downloadvideo)
+		if err != nil {
 			return m, err
 		}
-		if ischannelpost {
+
+		if ischannelpost && len(mtff) == 1 {
+
 			if err := tg.DeleteMessage(tg.DeleteMessageRequest{
 				ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 				MessageId: m.MessageId,
 			}); err != nil {
 				perr("ERROR tg.DeleteMessage %v", err)
 			}
+
 		}
 	}
 
@@ -1042,8 +1069,8 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	var videoFormat, videoSmallestFormat ytdl.Format
 
 	var tgdeleteMessages []tg.DeleteMessageRequest
-	defer func(mm *[]tg.DeleteMessageRequest) {
-		for _, dmr := range *mm {
+	defer func(dmrr *[]tg.DeleteMessageRequest) {
+		for _, dmr := range *dmrr {
 			tg.DeleteMessage(dmr)
 		}
 	}(&tgdeleteMessages)
@@ -1174,8 +1201,8 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	var audioFormat, audioSmallestFormat ytdl.Format
 
 	var tgdeleteMessages []tg.DeleteMessageRequest
-	defer func(mm *[]tg.DeleteMessageRequest) {
-		for _, dmr := range *mm {
+	defer func(dmrr *[]tg.DeleteMessageRequest) {
+		for _, dmr := range *dmrr {
 			tg.DeleteMessage(dmr)
 		}
 	}(&tgdeleteMessages)
@@ -1520,6 +1547,14 @@ func (sr *ThrottledReader) Read(p []byte) (int, error) {
 		time.Sleep(time.Duration(float64(n<<3) / float64(sr.Bps) * float64(time.Second)))
 	}
 	return n, err
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	if err != nil && errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
 }
 
 func downloadFile(url string) ([]byte, error) {
