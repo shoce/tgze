@@ -231,7 +231,9 @@ func main() {
 		<-sigterm
 		tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
-			Text:   tg.Esc(tg.F("%s sigterm", os.Args[0])),
+			Text: tg.Esc(tg.F(
+				"%s sigterm", os.Args[0],
+			)),
 		})
 		perr("sigterm")
 		os.Exit(1)
@@ -486,7 +488,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		perr("WARN unsupported type of update id <%d> received"+NL+"%s", u.UpdateId, tgupdatesjson)
 		if _, err := tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
-			Text:   tg.Esc(tg.F("unsupported type of update id <%d> received", u.UpdateId)) + NL + tg.Pre(tgupdatesjson),
+			Text: tg.Esc(tg.F(
+				"unsupported type of update id <%d> received", u.UpdateId,
+			)) + NL + tg.Pre(tgupdatesjson),
 		}); err != nil {
 			perr("WARN tg.SendMessage %v", err)
 			return m, err
@@ -604,7 +608,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				}
 				if _, tgerr2 := tg.SendMessage(tg.SendMessageRequest{
 					ChatId: fmt.Sprintf("%d", m.Chat.Id),
-					Text:   tg.Esc(tg.F("id <%d> err [%v]", chatid, tgerr)),
+					Text: tg.Esc(tg.F(
+						"id <%d> err [%v]", chatid, tgerr,
+					)),
 				}); tgerr2 != nil {
 					perr("ERROR tg.SendMessage %v", tgerr2)
 					return m, tgerr2
@@ -613,7 +619,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			} else {
 				chatinfo := tg.Esc(c.Title) + NL
 				if c.Username != "" {
-					chatinfo += tg.Esc(tg.F("https://t.me/%s", c.Username))
+					chatinfo += tg.Esc(tg.F(
+						"https://t.me/%s", c.Username,
+					))
 				} else if c.InviteLink != "" {
 					chatinfo += tg.Esc(c.InviteLink)
 				}
@@ -626,9 +634,13 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				}
 			}
 		}
-		tgtext := tg.Esc(tg.F("channels count <%d>", channelstotal)) + NL
+		tgtext := tg.Esc(tg.F(
+			"channels count <%d>", channelstotal,
+		)) + NL
 		if channelsremoved > 0 {
-			tgtext += tg.Esc(tg.F("channels removed count <%d>", channelsremoved))
+			tgtext += tg.Esc(tg.F(
+				"channels removed count <%d>", channelsremoved,
+			))
 		}
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
@@ -656,7 +668,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 			ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 			ReplyToMessageId: m.MessageId,
-			Text:             tg.Esc(tg.F("ok for <%d> of total <%d> channels.", totalok, total)),
+			Text: tg.Esc(tg.F(
+				"ok for <%d> of total <%d> channels.", totalok, total,
+			)),
 		}); tgerr != nil {
 			perr("ERROR tg.SendMessage %v", tgerr)
 			return m, tgerr
@@ -748,7 +762,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text:             tg.Esc(tg.F("ERROR GetFile %v", err)),
+				Text: tg.Esc(tg.F(
+					"ERROR GetFile %v", err,
+				)),
 			}); tgerr != nil {
 				perr("ERROR tg.SendMessage %v", tgerr)
 				return m, tgerr
@@ -772,8 +788,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 					"@File { @FileSize <%d> @FilePath [%s] }",
 					tgaudiofile.FileSize, tgaudiofile.FilePath,
 				)) + SP + tg.Esc(tg.F(
-					"exists <%t>",
-					fileExists(tgaudiofile.FilePath),
+					"exists <%t>", fileExists(tgaudiofile.FilePath),
 				)),
 			}); tgerr != nil {
 				perr("ERROR tg.SendMessage %v", tgerr)
@@ -807,7 +822,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 					if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 						ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 						ReplyToMessageId: m.MessageId,
-						Text:             tg.Esc(tg.F("ERROR os.Stat [%s] %v", filepath2, err)),
+						Text:             tg.Esc(tg.F(
+							"ERROR os.Stat [%s] %v", filepath2, err,
+						)),
 					}); tgerr != nil {
 						perr("ERROR tg.SendMessage %v", tgerr)
 						return m, tgerr
@@ -845,7 +862,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 					ReplyToMessageId: m.MessageId,
-					Text:             tg.Esc(tg.F("ERROR FfmpegAudioCompress %v", err)),
+					Text: tg.Esc(tg.F(
+						"ERROR FfmpegAudioCompress %v", err,
+					)),
 				}); tgerr != nil {
 					perr("ERROR tg.SendMessage %v", tgerr)
 					return m, tgerr
@@ -864,7 +883,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 					if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 						ChatId:           fmt.Sprintf("%d", m.Chat.Id),
 						ReplyToMessageId: m.MessageId,
-						Text:             tg.Esc(tg.F("ERROR os.Stat [%s] %v", filepath2, err)),
+						Text:             tg.Esc(tg.F(
+							"ERROR os.Stat [%s] %v", filepath2, err,
+						)),
 					}); tgerr != nil {
 						perr("ERROR tg.SendMessage %v", tgerr)
 						return m, tgerr
@@ -949,7 +970,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
 			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 			MessageId: m.MessageId,
-			Text:      tg.F("youtu.be/%s", ytid),
+			Text: tg.Esc(tg.F(
+				"youtu.be/%s", ytid,
+			)),
 		}); tgerr != nil {
 			perr("ERROR tg.EditMessageText %v", tgerr)
 		}
