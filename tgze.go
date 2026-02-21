@@ -945,7 +945,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		perr("ERROR tg.SetMessageReaction %v", tgerr)
 	}
 
-	if len(strings.Fields(m.Text)) == 1 {
+	if len(strings.Fields(m.Text)) == 1 && !islist {
 		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
 			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 			MessageId: m.MessageId,
