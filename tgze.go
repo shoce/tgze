@@ -397,14 +397,9 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 }
 
 func processTgUpdates() (err error) {
-	var tgdeleteMessages []tg.DeleteMessageRequest
-	defer func(dmrr *[]tg.DeleteMessageRequest) {
-		for _, dmr := range *dmrr {
-			tg.DeleteMessage(dmr)
-		}
-	}(&tgdeleteMessages)
 
 	var updatesoffset int64
+
 	if len(Config.TgUpdateLog) > 0 {
 		updatesoffset = Config.TgUpdateLog[len(Config.TgUpdateLog)-1] + 1
 	}
@@ -450,6 +445,7 @@ func processTgUpdates() (err error) {
 	}
 
 	return nil
+
 }
 
 func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error) {
@@ -1068,13 +1064,6 @@ func postAudioVideo(v YtVideo, ytlist *YtList, m tg.Message, downloadvideo bool)
 func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error {
 	var videoFormat, videoSmallestFormat ytdl.Format
 
-	var tgdeleteMessages []tg.DeleteMessageRequest
-	defer func(dmrr *[]tg.DeleteMessageRequest) {
-		for _, dmr := range *dmrr {
-			tg.DeleteMessage(dmr)
-		}
-	}(&tgdeleteMessages)
-
 	for _, f := range vinfo.Formats.WithAudioChannels() {
 		if !strings.Contains(f.MimeType, "/mp4") {
 			continue
@@ -1199,13 +1188,6 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 
 func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error {
 	var audioFormat, audioSmallestFormat ytdl.Format
-
-	var tgdeleteMessages []tg.DeleteMessageRequest
-	defer func(dmrr *[]tg.DeleteMessageRequest) {
-		for _, dmr := range *dmrr {
-			tg.DeleteMessage(dmr)
-		}
-	}(&tgdeleteMessages)
 
 	// https://pkg.go.dev/github.com/kkdai/youtube/v2#FormatList
 	for _, f := range vinfo.Formats.WithAudioChannels() {
