@@ -247,7 +247,7 @@ func main() {
 			perr("ERROR processTgUpdates %v", err)
 		}
 
-		perr("DEBUG sleeping")
+		//perr("DEBUG sleeping")
 		<-ticker.C
 	}
 
