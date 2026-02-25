@@ -239,13 +239,15 @@ func main() {
 		os.Exit(1)
 	}(sigterm)
 
-	ticker := time.NewTicker(Config.Interval)
-
 	for {
+		ticker := time.NewTicker(Config.Interval)
+
 		err := processTgUpdates()
 		if err != nil {
 			perr("ERROR processTgUpdates %v", err)
 		}
+
+		perr("DEBUG sleeping")
 		<-ticker.C
 	}
 
@@ -1576,8 +1578,12 @@ func perr(msg string, args ...interface{}) {
 	if len(args) > 0 {
 		msgtext = fmt.Sprintf(msgtext, args...)
 	}
-	msgtext = strings.ReplaceAll(msgtext, Config.TgToken, "[Config.TgToken]")
-	msgtext = strings.ReplaceAll(msgtext, Config.YtKey, "[Config.YtKey]")
+	if Config.TgToken != "" {
+		msgtext = strings.ReplaceAll(msgtext, Config.TgToken, "[Config.TgToken]")
+	}
+	if Config.YtKey != "" {
+		msgtext = strings.ReplaceAll(msgtext, Config.YtKey, "[Config.YtKey]")
+	}
 	fmt.Fprint(os.Stderr, ts()+SP+msgtext+NL)
 }
 
