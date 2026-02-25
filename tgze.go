@@ -519,6 +519,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	}
 
 	perr("Update @Message %s", strings.ReplaceAll(tg.F("%+v", m), NL, "<NL>"))
+
 	if !strings.Contains(m.Text, NL) {
 		perr("Message from [%s] chat [%s] title [%s] text [%s]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
 	} else {
@@ -947,41 +948,22 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 	}
 
-	var downloadvideo bool
-	if len(mtff) > 1 && (strings.ToLower(mtff[0]) == "video" || strings.ToLower(mtff[len(mtff)-1]) == "video") {
-		downloadvideo = true
-	}
-	if strings.HasPrefix(strings.ToLower(m.Chat.Title), "v") {
-		downloadvideo = true
-	}
-
-	var ytid string
-	var isytlist bool
-
-	if mm := YtListRe.FindStringSubmatch(m.Text); len(mm) > 1 {
-
-		ytid = mm[1]
-		isytlist = true
-
-	} else if mm := YtRe.FindStringSubmatch(m.Text); len(mm) > 1 {
-
-		ytid = mm[1]
-
-	}
-
-	if ytid == "" {
+	if len(mtff) != 1 {
 		return m, nil
 	}
 
-	if tgerr := tg.SetMessageReaction(tg.SetMessageReactionRequest{
-		ChatId:    fmt.Sprintf("%d", m.Chat.Id),
-		MessageId: m.MessageId,
-		Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "👾"}},
-	}); tgerr != nil {
-		perr("ERROR tg.SetMessageReaction %v", tgerr)
+	var ytid, ytlistid string
+	if ssm := YtListRe.FindStringSubmatch(m.Text); len(ssm) > 1 {
+		ytlistid = ssm[1]
+	} else if ssm := YtRe.FindStringSubmatch(m.Text); len(ssm) > 1 {
+		ytid = ssm[1]
 	}
 
-	if len(strings.Fields(m.Text)) == 1 && !isytlist {
+	if ytid == "" && ytlistid == "" {
+		return m, nil
+	}
+
+	if ytid != "" {
 		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
 			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 			MessageId: m.MessageId,
@@ -993,11 +975,23 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 	}
 
-	if isytlist {
+	if tgerr := tg.SetMessageReaction(tg.SetMessageReactionRequest{
+		ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+		MessageId: m.MessageId,
+		Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "👾"}},
+	}); tgerr != nil {
+		perr("ERROR tg.SetMessageReaction %v", tgerr)
+	}
+
+	var downloadvideo bool
+	if strings.HasPrefix(strings.ToLower(m.Chat.Title), "v") {
+		downloadvideo = true
+	}
+
+	if ytlistid != "" {
 
 		if ytlist, err := getList(ytid); err != nil {
-			perr("ERROR getList %v", err)
-			return m, err
+			return m, fmt.Errorf("getList %w", err)
 		} else {
 
 			if _, err := tg.SendPhoto(tg.SendPhotoRequest{
@@ -1021,22 +1015,22 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 		}
 
-	} else {
+	}
+
+	if ytid != "" {
 
 		err := postAudioVideo(YtVideo{Id: ytid}, nil, m, downloadvideo)
 		if err != nil {
 			return m, err
 		}
 
-		if ischannelpost && len(mtff) == 1 {
-
+		if ischannelpost {
 			if err := tg.DeleteMessage(tg.DeleteMessageRequest{
 				ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 				MessageId: m.MessageId,
 			}); err != nil {
 				perr("ERROR tg.DeleteMessage %v", err)
 			}
-
 		}
 	}
 
