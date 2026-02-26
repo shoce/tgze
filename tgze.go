@@ -1081,9 +1081,12 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 			Title       string
 			FullTitle   string
 			Description string
-			Duration    int64
-			Timestamp   int64
-			Epoch       int64
+
+			Width    int
+			Height   int
+			Duration int64
+
+			Timestamp int64
 		}
 
 		infourl := fmt.Sprintf("%s/info/youtu.be/%s", Config.DssUrl, v.Id)
@@ -1096,9 +1099,9 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 
 		tgvideoCaption := fmt.Sprintf(
 			"%s %s"+NL+
-				"youtu.be/%s %s ",
-			vinfo.Title, time.Unix(vinfo.Epoch, 0).Format("2006/01/02"),
-			v.Id, time.Duration(vinfo.Duration)*time.Second,
+				"youtu.be/%s %s %dp ",
+			vinfo.Title, time.Unix(vinfo.Timestamp, 0).Format("2006/01/02"),
+			v.Id, time.Duration(vinfo.Duration)*time.Second, vinfo.Height,
 		)
 
 		videourl := fmt.Sprintf("%s/video/youtu.be/%s", Config.DssUrl, v.Id)
@@ -1117,6 +1120,8 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 			ChatId:   fmt.Sprintf("%d", m.Chat.Id),
 			Caption:  tgvideoCaption,
 			Video:    tgvideohttp.Body,
+			Width:    vinfo.Width,
+			Height:   vinfo.Height,
 			Duration: time.Duration(vinfo.Duration) * time.Second,
 		}); tgerr != nil {
 			return fmt.Errorf("tg.SendVideoFile %w", err)
