@@ -416,7 +416,7 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 		return fmt.Errorf("json.Decoder.Decode %w", err)
 	}
 
-	perr("DEBUG getJson url [%s] response ContentLength <%d>"+NL+"%s", url, resp.ContentLength, respBody)
+	perr("DEBUG getJson [%s] @ContentLength <%d> @Body [-"+NL+"%s"+NL+"-]", url, resp.ContentLength, respBody)
 	if respjson != nil {
 		*respjson = string(respBody)
 	}
@@ -1094,6 +1094,7 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 		if err != nil {
 			return err
 		}
+		perr("DEBUG vinfo %#v", vinfo)
 
 		tgvideoCaption := fmt.Sprintf(
 			"%s %s"+NL+
