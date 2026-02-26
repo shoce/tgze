@@ -65,6 +65,7 @@ type TgZeConfig struct {
 
 	Interval time.Duration `yaml:"Interval"`
 
+	TgApiUrl     string `yaml:"TgApiUrl"`     // "https://api.telegram.org"
 	TgApiUrlBase string `yaml:"TgApiUrlBase"` // "https://api.telegram.org"
 
 	TgToken            string  `yaml:"TgToken"`
@@ -171,8 +172,12 @@ func ConfigGet() (err error) {
 	tg.ApiToken = Config.TgToken
 
 	perr("TgApiUrlBase [%s]", Config.TgApiUrlBase)
+	if Config.TgApiUrl == "" {
+		Config.TgApiUrl = Config.TgApiUrlBase
+	}
+	perr("TgApiUrl [%s]", Config.TgApiUrl)
 
-	tg.ApiUrl = Config.TgApiUrlBase
+	tg.ApiUrl = Config.TgApiUrl
 
 	//perr("TgUpdateLog %+v", Config.TgUpdateLog)
 
@@ -984,13 +989,13 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		return m, nil
 	}
 
-	if ytid != "" {
+	yturl := tg.F("youtu.be/%s", ytid)
+
+	if ytid != "" && m.Text != yturl {
 		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
 			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 			MessageId: m.MessageId,
-			Text: tg.Esc(tg.F(
-				"youtu.be/%s", ytid,
-			)),
+			Text:      tg.Esc(yturl),
 		}); tgerr != nil {
 			perr("ERROR tg.EditMessageText %v", tgerr)
 		}
@@ -1085,7 +1090,7 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 
 		infourl := fmt.Sprintf("%s/info/youtu.be/%s", Config.DssUrl, v.Id)
 		perr("DEBUG http get [%s]", infourl)
-		err := getJson(infourl, vinfo, nil)
+		err := getJson(infourl, &vinfo, nil)
 		if err != nil {
 			return err
 		}
