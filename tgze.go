@@ -51,6 +51,10 @@ const (
 	TgCommandChannelsPromoteAdminDefault = ""
 	TgCommandAudioCompressDefault        = "audio compress"
 
+	YtMaxResultsDefault      = 50
+	YtThrottleDefault        = 12
+	YtVisitorIdMaxAgeDefault = 59 * time.Minute
+
 	FfmpegAudioCompressFilterDefault = "highpass=f=80,acompressor=threshold=-18dB:ratio=4:attack=5:release=100:makeup=6,alimiter=limit=0.95"
 )
 
@@ -61,12 +65,12 @@ type TgZeConfig struct {
 
 	Interval time.Duration `yaml:"Interval"`
 
-	TgApiUrlBase string `yaml:"TgApiUrlBase"` // = "https://api.telegram.org"
+	TgApiUrlBase string `yaml:"TgApiUrlBase"` // "https://api.telegram.org"
 
 	TgToken            string  `yaml:"TgToken"`
 	TgZeChatId         int64   `yaml:"TgZeChatId"`
 	TgUpdateLog        []int64 `yaml:"TgUpdateLog,flow"`
-	TgUpdateLogMaxSize int     `yaml:"TgUpdateLogMaxSize"` // = 1080
+	TgUpdateLogMaxSize int     `yaml:"TgUpdateLogMaxSize"` // 333
 
 	TgCommandChannels             string `yaml:"TgCommandChannels"`
 	TgCommandChannelsPromoteAdmin string `yaml:"TgCommandChannelsPromoteAdmin"`
@@ -81,28 +85,29 @@ type TgZeConfig struct {
 
 	TgAllChannelsChatIds []int64 `yaml:"TgAllChannelsChatIds,flow"`
 
-	TgMaxFileSizeBytes      int64 `yaml:"TgMaxFileSizeBytes"`      // = 47 << 20
-	TgVideoAudioBitrateKbps int64 `yaml:"TgVideoAudioBitrateKbps"` // = 60
+	TgMaxFileSizeBytes      int64 `yaml:"TgMaxFileSizeBytes"`      // 47 << 20
+	TgVideoAudioBitrateKbps int64 `yaml:"TgVideoAudioBitrateKbps"` // 60
 
 	FfmpegPath                string   `yaml:"FfmpegPath"`          // "/bin/ffmpeg"
-	FfmpegGlobalOptions       []string `yaml:"FfmpegGlobalOptions"` // e.g. []string{"-v", "error"}
+	FfmpegGlobalOptions       []string `yaml:"FfmpegGlobalOptions"` // []string{"-v", "error"}
 	FfmpegAudioCompressFilter string   `yaml:"FfmpegAudioCompressFilter"`
 
 	DssUrl string `yaml:"DssUrl"` // "http://dss:80"
 
 	YtKey        string `yaml:"YtKey"`
-	YtMaxResults int64  `yaml:"YtMaxResults"` // = 50
-	YtThrottle   int64  `yaml:"YtThrottle"`   // = 12
+	YtMaxResults int64  `yaml:"YtMaxResults"` // YtMaxResultsDefault
+	YtThrottle   int64  `yaml:"YtThrottle"`   // YtThrottleDefault
 
-	YtUserAgent string `yaml:"YtUserAgent"` // = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Safari/605.1.15"
+	YtVisitorIdMaxAge time.Duration `yaml:"YtVisitorIdMaxAge"` // YtVisitorIdMaxAgeDefault 59*time.Minute
+	YtUserAgent       string        `yaml:"YtUserAgent"`       // "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Safari/605.1.15"
 
 	// https://golang.org/s/re2syntax
 	// (?:re)	non-capturing group
 	// TODO add support for https://www.youtube.com/watch?&list=PL5Qevr-CpW_yZZjYspehnFc-QRKQMCKHB&v=1nzx7O7ndfI&index=34
-	YtRe     string `yaml:"YtRe"`     // = `(?:youtube.com/watch\?v=|youtu.be/|youtube.com/watch/|youtube.com/shorts/|youtube.com/live/)([0-9A-Za-z_-]+)`
-	YtListRe string `yaml:"YtListRe"` // = `youtube.com/playlist\?list=([0-9A-Za-z_-]+)`
+	YtRe     string `yaml:"YtRe"`     // `(?:youtube.com/watch\?v=|youtu.be/|youtube.com/watch/|youtube.com/shorts/|youtube.com/live/)([0-9A-Za-z_-]+)`
+	YtListRe string `yaml:"YtListRe"` // `youtube.com/playlist\?list=([0-9A-Za-z_-]+)`
 
-	YtDownloadLanguages []string `yaml:"YtDownloadLanguages"` // = []string{"english", "german", "russian", "ukrainian"}
+	YtDownloadLanguages []string `yaml:"YtDownloadLanguages"` // []string{"english", "german", "russian", "ukrainian"}
 }
 
 var (
@@ -128,36 +133,39 @@ func init() {
 	}
 	perr("YssUrl [%s]", Config.YssUrl)
 
-	if err := Config.Get(); err != nil {
-		perr("ERROR Config.Get %v", err)
+	if err := ConfigGet(); err != nil {
+		perr("ERROR ConfigGet %v", err)
 		os.Exit(1)
+	}
+
+}
+
+func ConfigGet() (err error) {
+	if err := Config.Get(); err != nil {
+		return err
 	}
 
 	if Config.DEBUG {
 		perr("DEBUG <true>")
+		tg.DEBUG = true
 	}
 
 	perr("Interval <%v>", Config.Interval)
 	if Config.Interval == 0 {
-		perr("ERROR Interval empty")
-		os.Exit(1)
+		return fmt.Errorf("Interval empty")
 	}
 
-	var err error
 	YtRe, err = regexp.Compile(Config.YtRe)
 	if err != nil {
-		perr("ERROR Compile YtRe [%s] %v", Config.YtRe, err)
-		os.Exit(1)
+		return fmt.Errorf("Compile YtRe [%s] %w", Config.YtRe, err)
 	}
 	YtListRe, err = regexp.Compile(Config.YtListRe)
 	if err != nil {
-		perr("ERROR Compile YtListRe [%s] %v", Config.YtListRe, err)
-		os.Exit(1)
+		return fmt.Errorf("Compile YtListRe [%s] %w", Config.YtListRe, err)
 	}
 
 	if Config.TgToken == "" {
-		perr("ERROR TgToken empty")
-		os.Exit(1)
+		return fmt.Errorf("ERROR TgToken empty")
 	}
 
 	tg.ApiToken = Config.TgToken
@@ -166,7 +174,7 @@ func init() {
 
 	tg.ApiUrl = Config.TgApiUrlBase
 
-	//log("TgUpdateLog %+v", Config.TgUpdateLog)
+	//perr("TgUpdateLog %+v", Config.TgUpdateLog)
 
 	if Config.TgCommandChannels == "" {
 		Config.TgCommandChannels = TgCommandChannelsDefault
@@ -177,27 +185,28 @@ func init() {
 	}
 
 	if Config.TgCommandChannelsPromoteAdmin == "" {
-		perr("ERROR TgCommandChannelsPromoteAdmin empty")
-		os.Exit(1)
+		return fmt.Errorf("TgCommandChannelsPromoteAdmin empty")
 	}
 
 	perr("DssUrl [%s]", Config.DssUrl)
 
 	if Config.YtKey == "" {
-		perr("ERROR YtKey empty")
-		os.Exit(1)
+		return fmt.Errorf("YtKey empty")
 	}
 
 	if Config.YtMaxResults == 0 {
-		Config.YtMaxResults = 50
+		Config.YtMaxResults = YtMaxResultsDefault
 	}
 
 	if Config.YtThrottle == 0 {
-		Config.YtThrottle = 12
+		Config.YtThrottle = YtThrottleDefault
 	}
 	perr("DEBUG YtThrottle <%d>", Config.YtThrottle)
 
-	ytdl.VisitorIdMaxAge = 1 * time.Hour
+	if Config.YtVisitorIdMaxAge == 0 {
+		Config.YtVisitorIdMaxAge = YtVisitorIdMaxAgeDefault
+	}
+	ytdl.VisitorIdMaxAge = Config.YtVisitorIdMaxAge
 
 	// https://pkg.go.dev/github.com/kkdai/youtube/v2/#pkg-variables
 	/*
@@ -226,6 +235,8 @@ func init() {
 	if Config.FfmpegAudioCompressFilter == "" {
 		Config.FfmpegAudioCompressFilter = FfmpegAudioCompressFilterDefault
 	}
+
+	return nil
 }
 
 func main() {
@@ -244,11 +255,17 @@ func main() {
 	}(sigterm)
 
 	for {
+		err := ConfigGet()
+		if err != nil {
+			perr("ERROR ConfigGet %v", err)
+			os.Exit(1)
+		}
+
 		ticker := time.NewTicker(Config.Interval)
 
-		err := processTgUpdates()
+		err = TgGetUpdates()
 		if err != nil {
-			perr("ERROR processTgUpdates %v", err)
+			perr("ERROR TgGetUpdates %v", err)
 		}
 
 		//perr("DEBUG sleeping")
@@ -402,7 +419,7 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 	return nil
 }
 
-func processTgUpdates() (err error) {
+func TgGetUpdates() (err error) {
 
 	var updatesoffset int64
 
