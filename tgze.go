@@ -195,7 +195,7 @@ func init() {
 	if Config.YtThrottle == 0 {
 		Config.YtThrottle = 12
 	}
-	perr("YtThrottle <%d>", Config.YtThrottle)
+	perr("DEBUG YtThrottle <%d>", Config.YtThrottle)
 
 	ytdl.VisitorIdMaxAge = 1 * time.Hour
 
@@ -222,7 +222,7 @@ func init() {
 	}
 
 	perr("FfmpegPath [%s]", Config.FfmpegPath)
-	perr("FfmpegGlobalOptions (%v)", Config.FfmpegGlobalOptions)
+	perr("DEBUG FfmpegGlobalOptions %s", AtonListStrings(Config.FfmpegGlobalOptions))
 	if Config.FfmpegAudioCompressFilter == "" {
 		Config.FfmpegAudioCompressFilter = FfmpegAudioCompressFilterDefault
 	}
@@ -444,7 +444,7 @@ func processTgUpdates() (err error) {
 				MessageId: m.MessageId,
 				Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "🤷‍♂"}},
 			}); tgerr != nil {
-				perr("ERROR tg.SetMessageReaction %v", tgerr)
+				perr("ERROR tg.SetMessageReaction [🤷‍♂] %v", tgerr)
 			}
 			return err
 		}
@@ -984,7 +984,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		MessageId: m.MessageId,
 		Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "👾"}},
 	}); tgerr != nil {
-		perr("ERROR tg.SetMessageReaction %v", tgerr)
+		perr("ERROR tg.SetMessageReaction [👾] %v", tgerr)
 	}
 
 	var downloadvideo bool
@@ -1564,6 +1564,14 @@ func downloadFile(url string) ([]byte, error) {
 	}
 
 	return bb.Bytes(), nil
+}
+
+func AtonListStrings(ss []string) string {
+	var aa []string
+	for _, s := range ss {
+		aa = append(aa, "["+s+"]")
+	}
+	return "( " + strings.Join(aa, " ") + " )"
 }
 
 func beats(td time.Duration) int {
