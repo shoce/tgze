@@ -1072,7 +1072,53 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 
 	if Config.DssUrl != "" {
-		perr("DEBUG http get %s/video/youtu.be/%s", Config.DssUrl, v.Id)
+
+		var vinfo struct {
+			Id          string
+			Title       string
+			FullTitle   string
+			Description string
+			Duration    int64
+			Timestamp   int64
+			Epoch       int64
+		}
+
+		infourl := fmt.Sprintf("%s/info/youtu.be/%s", Config.DssUrl, v.Id)
+		perr("DEBUG http get [%s]", infourl)
+		err := getJson(infourl, vinfo, nil)
+		if err != nil {
+			return err
+		}
+
+		tgvideoCaption := fmt.Sprintf(
+			"%s %s"+NL+
+				"youtu.be/%s %s ",
+			vinfo.Title, time.Unix(vinfo.Epoch, 0).Format("2006/01/02"),
+			v.Id, time.Duration(vinfo.Duration)*time.Second,
+		)
+
+		videourl := fmt.Sprintf("%s/video/youtu.be/%s", Config.DssUrl, v.Id)
+		perr("DEBUG http get [%s]", videourl)
+
+		tgvideohttp, err := http.Get(videourl)
+		if err != nil {
+			return err
+		}
+		defer tgvideohttp.Body.Close()
+		if tgvideohttp.StatusCode != http.StatusOK {
+			return fmt.Errorf("GET %s status code %d", videourl, tgvideohttp.StatusCode)
+		}
+
+		if _, tgerr := tg.SendVideoFile(tg.SendVideoFileRequest{
+			ChatId:   fmt.Sprintf("%d", m.Chat.Id),
+			Caption:  tgvideoCaption,
+			Video:    tgvideohttp.Body,
+			Duration: time.Duration(vinfo.Duration) * time.Second,
+		}); tgerr != nil {
+			return fmt.Errorf("tg.SendVideoFile %w", err)
+		}
+
+		return nil
 	}
 
 	vinfo, err := YtdlCl.GetVideoContext(Ctx, v.Id)
