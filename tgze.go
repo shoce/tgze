@@ -65,8 +65,7 @@ type TgZeConfig struct {
 
 	Interval time.Duration `yaml:"Interval"`
 
-	TgApiUrl     string `yaml:"TgApiUrl"`     // "https://api.telegram.org"
-	TgApiUrlBase string `yaml:"TgApiUrlBase"` // "https://api.telegram.org"
+	TgApiUrl string `yaml:"TgApiUrl"` // "https://api.telegram.org"
 
 	TgToken            string  `yaml:"TgToken"`
 	TgZeChatId         int64   `yaml:"TgZeChatId"`
@@ -171,11 +170,10 @@ func ConfigGet() (err error) {
 
 	tg.ApiToken = Config.TgToken
 
-	perr("TgApiUrlBase [%s]", Config.TgApiUrlBase)
-	if Config.TgApiUrl == "" {
-		Config.TgApiUrl = Config.TgApiUrlBase
-	}
 	perr("TgApiUrl [%s]", Config.TgApiUrl)
+	if Config.TgApiUrl == "" {
+		return fmt.Errorf("TgApiUrl empty")
+	}
 
 	tg.ApiUrl = Config.TgApiUrl
 
