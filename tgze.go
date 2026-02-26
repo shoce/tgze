@@ -88,6 +88,8 @@ type TgZeConfig struct {
 	FfmpegGlobalOptions       []string `yaml:"FfmpegGlobalOptions"` // e.g. []string{"-v", "error"}
 	FfmpegAudioCompressFilter string   `yaml:"FfmpegAudioCompressFilter"`
 
+	DssUrl string `yaml:"DssUrl"` // "http://dss:80"
+
 	YtKey        string `yaml:"YtKey"`
 	YtMaxResults int64  `yaml:"YtMaxResults"` // = 50
 	YtThrottle   int64  `yaml:"YtThrottle"`   // = 12
@@ -178,6 +180,8 @@ func init() {
 		perr("ERROR TgCommandChannelsPromoteAdmin empty")
 		os.Exit(1)
 	}
+
+	perr("DssUrl [%s]", Config.DssUrl)
 
 	if Config.YtKey == "" {
 		perr("ERROR YtKey empty")
@@ -990,38 +994,49 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 	if ytlistid != "" {
 
-		if ytlist, err := getList(ytid); err != nil {
+		ytlist, err := getList(ytlistid)
+		if err != nil {
 			return m, fmt.Errorf("getList %w", err)
-		} else {
+		}
 
-			if _, err := tg.SendPhoto(tg.SendPhotoRequest{
-				ChatId:  fmt.Sprintf("%d", m.Chat.Id),
-				Photo:   ytlist.ThumbUrl,
-				Caption: tg.Bold(ytlist.Title) + NL + tg.Italic(tg.F("<%d> videos", len(ytlist.Videos))) + NL + tg.Link(ytlist.Id, ytid),
-			}); err != nil {
-				perr("ERROR tg.SendPhoto %v", err)
-			}
+		if _, tgerr := tg.SendPhoto(tg.SendPhotoRequest{
+			ChatId:  fmt.Sprintf("%d", m.Chat.Id),
+			Photo:   ytlist.ThumbUrl,
+			Caption: tg.Bold(ytlist.Title) + NL + tg.Italic(tg.F("<%d> videos", len(ytlist.Videos))) + NL + tg.Link(ytlist.Id, ytid),
+		}); tgerr != nil {
+			perr("ERROR tg.SendPhoto %v", tgerr)
+		}
 
-			for _, v := range ytlist.Videos {
-				if err := postAudioVideo(v, ytlist, m, downloadvideo); err != nil {
+		for _, v := range ytlist.Videos {
+			if downloadvideo {
+				if err := postVideo(v, ytlist, m); err != nil {
 					return m, err
 				}
-				if len(ytlist.Videos) > 3 {
-					sleepdur := 11 * time.Second
-					perr("DEBUG sleeping <%v>", sleepdur)
-					time.Sleep(sleepdur)
+			} else {
+				if err := postAudio(v, ytlist, m); err != nil {
+					return m, err
 				}
 			}
-
+			if len(ytlist.Videos) > 3 {
+				sleepdur := 11 * time.Second
+				perr("DEBUG sleeping <%v>", sleepdur)
+				time.Sleep(sleepdur)
+			}
 		}
 
 	}
 
 	if ytid != "" {
 
-		err := postAudioVideo(YtVideo{Id: ytid}, nil, m, downloadvideo)
-		if err != nil {
-			return m, err
+		v := YtVideo{Id: ytid}
+		if downloadvideo {
+			if err := postVideo(v, nil, m); err != nil {
+				return m, err
+			}
+		} else {
+			if err := postAudio(v, nil, m); err != nil {
+				return m, err
+			}
 		}
 
 		if ischannelpost {
@@ -1037,27 +1052,17 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	return m, nil
 }
 
-func postAudioVideo(v YtVideo, ytlist *YtList, m tg.Message, downloadvideo bool) error {
-	var err error
-	var vinfo *ytdl.Video
-	vinfo, err = YtdlCl.GetVideoContext(Ctx, v.Id)
+func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
+
+	if Config.DssUrl != "" {
+		perr("DEBUG http get %s/video/youtu.be/%s", Config.DssUrl, v.Id)
+	}
+
+	vinfo, err := YtdlCl.GetVideoContext(Ctx, v.Id)
 	if err != nil {
 		return err
 	}
 
-	if downloadvideo {
-		if err := postVideo(v, vinfo, ytlist, m); err != nil {
-			return err
-		}
-	} else {
-		if err := postAudio(v, vinfo, ytlist, m); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error {
 	var videoFormat, videoSmallestFormat ytdl.Format
 
 	for _, f := range vinfo.Formats.WithAudioChannels() {
@@ -1094,7 +1099,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 
 	ytstream, ytstreamsize, err := YtdlCl.GetStreamContext(Ctx, vinfo, &videoFormat)
 	if err != nil {
-		return fmt.Errorf("GetStreamContext: %w", err)
+		return fmt.Errorf("GetStreamContext %w", err)
 	}
 	defer ytstream.Close()
 
@@ -1169,7 +1174,7 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		Height:   videoFormat.Height,
 		Duration: vinfo.Duration,
 	}); err != nil {
-		return fmt.Errorf("tgsendVideoFile %w", err)
+		return fmt.Errorf("tg.SendVideoFile %w", err)
 	}
 
 	if err := tgvideoReader.Close(); err != nil {
@@ -1182,7 +1187,17 @@ func postVideo(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 	return nil
 }
 
-func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error {
+func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
+
+	if Config.DssUrl != "" {
+		perr("DEBUG http get %s/audio/youtu.be/%s", Config.DssUrl, v.Id)
+	}
+
+	vinfo, err := YtdlCl.GetVideoContext(Ctx, v.Id)
+	if err != nil {
+		return err
+	}
+
 	var audioFormat, audioSmallestFormat ytdl.Format
 
 	// https://pkg.go.dev/github.com/kkdai/youtube/v2#FormatList
@@ -1328,7 +1343,7 @@ func postAudio(v YtVideo, vinfo *ytdl.Video, ytlist *YtList, m tg.Message) error
 		Audio:     tgaudioReader,
 		Thumb:     bytes.NewReader(thumbBytes),
 	}); err != nil {
-		return fmt.Errorf("tgsendAudioFile %w", err)
+		return fmt.Errorf("tg.SendAudioFile %w", err)
 	}
 
 	if err := tgaudioReader.Close(); err != nil {
