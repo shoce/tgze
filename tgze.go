@@ -402,6 +402,9 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("response http status %d %s", resp.StatusCode, resp.Status)
+	}
 
 	var respBody []byte
 	respBody, err = io.ReadAll(resp.Body)
@@ -1049,14 +1052,21 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	if ytid != "" {
 
 		v := YtVideo{Id: ytid}
-		if downloadvideo {
-			if err := postVideo(v, nil, m); err != nil {
-				return m, err
+		if Config.DssUrl != "" {
+			if downloadvideo {
+				err = postVideoDss(v, nil, m)
+			} else {
+				err = postAudioDss(v, nil, m)
 			}
 		} else {
-			if err := postAudio(v, nil, m); err != nil {
-				return m, err
+			if downloadvideo {
+				err = postVideo(v, nil, m)
+			} else {
+				err = postAudio(v, nil, m)
 			}
+		}
+		if err != nil {
+			return m, err
 		}
 
 		if ischannelpost {
@@ -1072,63 +1082,63 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 	return m, nil
 }
 
-func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
+func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 
-	if Config.DssUrl != "" {
+	var vinfo struct {
+		Id          string
+		Title       string
+		FullTitle   string
+		Description string
 
-		var vinfo struct {
-			Id          string
-			Title       string
-			FullTitle   string
-			Description string
+		Width    int
+		Height   int
+		Duration int64
 
-			Width    int
-			Height   int
-			Duration int64
-
-			Timestamp int64
-		}
-
-		infourl := fmt.Sprintf("%s/info/youtu.be/%s", Config.DssUrl, v.Id)
-		perr("DEBUG http get [%s]", infourl)
-		err := getJson(infourl, &vinfo, nil)
-		if err != nil {
-			return err
-		}
-		perr("DEBUG vinfo %#v", vinfo)
-
-		tgvideoCaption := fmt.Sprintf(
-			"%s %s"+NL+
-				"youtu.be/%s %s %dp ",
-			vinfo.Title, time.Unix(vinfo.Timestamp, 0).Format("2006/01/02"),
-			v.Id, time.Duration(vinfo.Duration)*time.Second, vinfo.Height,
-		)
-
-		videourl := fmt.Sprintf("%s/video/youtu.be/%s", Config.DssUrl, v.Id)
-		perr("DEBUG http get [%s]", videourl)
-
-		tgvideohttp, err := http.Get(videourl)
-		if err != nil {
-			return err
-		}
-		defer tgvideohttp.Body.Close()
-		if tgvideohttp.StatusCode != http.StatusOK {
-			return fmt.Errorf("GET %s status code %d", videourl, tgvideohttp.StatusCode)
-		}
-
-		if _, tgerr := tg.SendVideoFile(tg.SendVideoFileRequest{
-			ChatId:   fmt.Sprintf("%d", m.Chat.Id),
-			Caption:  tgvideoCaption,
-			Video:    tgvideohttp.Body,
-			Width:    vinfo.Width,
-			Height:   vinfo.Height,
-			Duration: time.Duration(vinfo.Duration) * time.Second,
-		}); tgerr != nil {
-			return fmt.Errorf("tg.SendVideoFile %w", err)
-		}
-
-		return nil
+		Timestamp int64
 	}
+
+	infourl := fmt.Sprintf("%s/info/youtu.be/%s", Config.DssUrl, v.Id)
+	perr("DEBUG http get [%s]", infourl)
+	err := getJson(infourl, &vinfo, nil)
+	if err != nil {
+		return err
+	}
+	perr("DEBUG vinfo %#v", vinfo)
+
+	tgvideoCaption := fmt.Sprintf(
+		"%s %s"+NL+
+			"youtu.be/%s %s %dp ",
+		vinfo.Title, time.Unix(vinfo.Timestamp, 0).Format("2006/01/02"),
+		v.Id, time.Duration(vinfo.Duration)*time.Second, vinfo.Height,
+	)
+
+	videourl := fmt.Sprintf("%s/video/youtu.be/%s", Config.DssUrl, v.Id)
+	perr("DEBUG http get [%s]", videourl)
+
+	tgvideohttp, err := http.Get(videourl)
+	if err != nil {
+		return err
+	}
+	defer tgvideohttp.Body.Close()
+	if tgvideohttp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET %s status code %d", videourl, tgvideohttp.StatusCode)
+	}
+
+	if _, tgerr := tg.SendVideoFile(tg.SendVideoFileRequest{
+		ChatId:   fmt.Sprintf("%d", m.Chat.Id),
+		Caption:  tgvideoCaption,
+		Video:    tgvideohttp.Body,
+		Width:    vinfo.Width,
+		Height:   vinfo.Height,
+		Duration: time.Duration(vinfo.Duration) * time.Second,
+	}); tgerr != nil {
+		return fmt.Errorf("tg.SendVideoFile %w", err)
+	}
+
+	return nil
+}
+
+func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 
 	vinfo, err := YtdlCl.GetVideoContext(Ctx, v.Id)
 	if err != nil {
@@ -1259,11 +1269,12 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 	return nil
 }
 
-func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
+func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
+	perr("DEBUG http get %s/audio/youtu.be/%s", Config.DssUrl, v.Id)
+	return postAudio(v, ytlist, m)
+}
 
-	if Config.DssUrl != "" {
-		perr("DEBUG http get %s/audio/youtu.be/%s", Config.DssUrl, v.Id)
-	}
+func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 
 	vinfo, err := YtdlCl.GetVideoContext(Ctx, v.Id)
 	if err != nil {
