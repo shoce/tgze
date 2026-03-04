@@ -1086,15 +1086,16 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 
 	var vinfo struct {
 		Id          string
+		Channel     string
 		Title       string
 		FullTitle   string
 		Description string
 
-		Width    int
-		Height   int
-		Duration int64
-
 		Timestamp int64
+		Duration  int64
+
+		Width  int
+		Height int
 	}
 
 	infourl := fmt.Sprintf("%s/info/youtu.be/%s", Config.DssUrl, v.Id)
@@ -1108,13 +1109,12 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	tgvideoCaption := fmt.Sprintf(
 		"%s %s"+NL+
 			"youtu.be/%s %s %dp ",
-		vinfo.Title, time.Unix(vinfo.Timestamp, 0).Format("2006/01/02"),
+		vinfo.FullTitle, time.Unix(vinfo.Timestamp, 0).Format("2006/01/02"),
 		v.Id, time.Duration(vinfo.Duration)*time.Second, vinfo.Height,
 	)
 
 	videourl := fmt.Sprintf("%s/video/youtu.be/%s", Config.DssUrl, v.Id)
 	perr("DEBUG http get [%s]", videourl)
-
 	tgvideohttp, err := http.Get(videourl)
 	if err != nil {
 		return err
@@ -1248,15 +1248,15 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 	}
 	defer tgvideoReader.Close()
 
-	if _, err := tg.SendVideoFile(tg.SendVideoFileRequest{
+	if _, tgerr := tg.SendVideoFile(tg.SendVideoFileRequest{
 		ChatId:   fmt.Sprintf("%d", m.Chat.Id),
 		Caption:  tgvideoCaption,
 		Video:    tgvideoReader,
 		Width:    videoFormat.Width,
 		Height:   videoFormat.Height,
 		Duration: vinfo.Duration,
-	}); err != nil {
-		return fmt.Errorf("tg.SendVideoFile %w", err)
+	}); tgerr != nil {
+		return fmt.Errorf("tg.SendVideoFile %w", tgerr)
 	}
 
 	if err := tgvideoReader.Close(); err != nil {
@@ -1270,8 +1270,71 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 }
 
 func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
-	perr("DEBUG http get %s/audio/youtu.be/%s", Config.DssUrl, v.Id)
-	return postAudio(v, ytlist, m)
+
+	var vinfo struct {
+		Id          string
+		Channel     string
+		Title       string
+		FullTitle   string
+		Description string
+
+		Timestamp int64
+		Duration  int64
+
+		Abr float64
+	}
+
+	infourl := fmt.Sprintf("%s/info/youtu.be/%s", Config.DssUrl, v.Id)
+	perr("DEBUG http get [%s]", infourl)
+	err := getJson(infourl, &vinfo, nil)
+	if err != nil {
+		return err
+	}
+	perr("DEBUG vinfo %#v", vinfo)
+
+	tgaudioCaption := fmt.Sprintf(
+		"%s %s"+NL+
+			"youtu.be/%s %s %dkbps ",
+		vinfo.FullTitle, time.Unix(vinfo.Timestamp, 0).Format("2006/01/02"),
+		v.Id, time.Duration(vinfo.Duration)*time.Second, int64(vinfo.Abr),
+	)
+
+	audiourl := fmt.Sprintf("%s/audio/youtu.be/%s", Config.DssUrl, v.Id)
+	perr("DEBUG http get [%s]", audiourl)
+	tgaudiohttp, err := http.Get(audiourl)
+	if err != nil {
+		return err
+	}
+	defer tgaudiohttp.Body.Close()
+	if tgaudiohttp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET %s status code %d", audiourl, tgaudiohttp.StatusCode)
+	}
+
+	thumburl := fmt.Sprintf("%s/thumb/youtu.be/%s", Config.DssUrl, v.Id)
+	tgthumbhttp, err := http.Get(thumburl)
+	perr("DEBUG http get [%s]", thumburl)
+	thumburlhttp, err := http.Get(thumburl)
+	if err != nil {
+		return err
+	}
+	defer thumburlhttp.Body.Close()
+	if thumburlhttp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET %s status code %d", thumburl, thumburlhttp.StatusCode)
+	}
+
+	if _, tgerr := tg.SendAudioFile(tg.SendAudioFileRequest{
+		ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+		Caption:   tgaudioCaption,
+		Performer: vinfo.Channel,
+		Title:     vinfo.FullTitle,
+		Duration:  time.Duration(vinfo.Duration) * time.Second,
+		Audio:     tgaudiohttp.Body,
+		Thumb:     tgthumbhttp.Body,
+	}); tgerr != nil {
+		return fmt.Errorf("tg.SendAudioFile %w", err)
+	}
+
+	return nil
 }
 
 func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
@@ -1417,7 +1480,7 @@ func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 	}
 	defer tgaudioReader.Close()
 
-	if _, err := tg.SendAudioFile(tg.SendAudioFileRequest{
+	if _, tgerr := tg.SendAudioFile(tg.SendAudioFileRequest{
 		ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 		Caption:   tgaudioCaption,
 		Performer: vinfo.Author,
@@ -1425,8 +1488,8 @@ func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 		Duration:  vinfo.Duration,
 		Audio:     tgaudioReader,
 		Thumb:     bytes.NewReader(thumbBytes),
-	}); err != nil {
-		return fmt.Errorf("tg.SendAudioFile %w", err)
+	}); tgerr != nil {
+		return fmt.Errorf("tg.SendAudioFile %w", tgerr)
 	}
 
 	if err := tgaudioReader.Close(); err != nil {
