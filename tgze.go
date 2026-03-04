@@ -1004,9 +1004,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		for _, v := range ytlist.Videos {
 			if Config.DssUrl != "" {
 				if downloadvideo {
-					err = postVideoDss(v, nil, m)
+					err = postVideoDss(v, ytlist, m)
 				} else {
-					err = postAudioDss(v, nil, m)
+					err = postAudioDss(v, ytlist, m)
 				}
 			} else {
 				if downloadvideo {
@@ -1090,7 +1090,7 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		vinfo.FullTitle, time.Unix(vinfo.Timestamp, 0).Format("2006/01/02"),
 		v.Id, time.Duration(vinfo.Duration)*time.Second, vinfo.Height,
 	)
-	if ytlist.Id != "" && ytlist.Title != "" {
+	if ytlist != nil && ytlist.Title != "" {
 		tgvideoCaption += NL + fmt.Sprintf(
 			"%d/%d %s",
 			v.PlaylistIndex+1, ytlist.Size, ytlist.Title,
