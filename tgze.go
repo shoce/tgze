@@ -1075,7 +1075,7 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	if err != nil {
 		return err
 	}
-	perr("DEBUG vinfo %#v", vinfo)
+	perr("DEBUG vinfo %+v", vinfo)
 
 	tgvideoCaption := fmt.Sprintf(
 		"%s %s"+NL+
@@ -1136,7 +1136,7 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	if err != nil {
 		return err
 	}
-	perr("DEBUG vinfo %#v", vinfo)
+	perr("DEBUG vinfo %+v", vinfo)
 
 	tgaudioCaption := fmt.Sprintf(
 		"%s %s"+NL+
