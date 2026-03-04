@@ -961,7 +961,18 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		return m, nil
 	}
 
+	ytlisturl := tg.F("youtube.com/playlist?list=%s", ytlistid)
 	yturl := tg.F("youtu.be/%s", ytid)
+
+	if ytlistid != "" && m.Text != ytlisturl {
+		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
+			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+			MessageId: m.MessageId,
+			Text:      tg.Esc(ytlisturl),
+		}); tgerr != nil {
+			perr("ERROR tg.EditMessageText %v", tgerr)
+		}
+	}
 
 	if ytid != "" && m.Text != yturl {
 		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
