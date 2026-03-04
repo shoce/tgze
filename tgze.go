@@ -396,35 +396,6 @@ func (uat *UserAgentTransport) RoundTrip(req *http.Request) (*http.Response, err
 	return uat.Transport.RoundTrip(req)
 }
 
-func getJson(url string, target interface{}, respjson *string) (err error) {
-	resp, err := HttpClient.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("response http status %d %s", resp.StatusCode, resp.Status)
-	}
-
-	var respBody []byte
-	respBody, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("io.ReadAll %w", err)
-	}
-
-	err = json.NewDecoder(bytes.NewBuffer(respBody)).Decode(target)
-	if err != nil {
-		return fmt.Errorf("json.Decoder.Decode %w", err)
-	}
-
-	perr("DEBUG getJson [%s] @ContentLength <%d> @Body [-"+NL+"%s"+NL+"-]", url, resp.ContentLength, respBody)
-	if respjson != nil {
-		*respjson = string(respBody)
-	}
-
-	return nil
-}
-
 func TgGetUpdates() (err error) {
 
 	var updatesoffset int64
@@ -1698,6 +1669,36 @@ func (sr *ThrottledReader) Read(p []byte) (int, error) {
 		time.Sleep(time.Duration(float64(n<<3) / float64(sr.Bps) * float64(time.Second)))
 	}
 	return n, err
+}
+
+func getJson(url string, target interface{}, respjson *string) (err error) {
+	resp, err := HttpClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("response http status %d %s", resp.StatusCode, resp.Status)
+	}
+
+	var respBody []byte
+	respBody, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("io.ReadAll %w", err)
+	}
+
+	err = json.NewDecoder(bytes.NewBuffer(respBody)).Decode(target)
+	if err != nil {
+		return fmt.Errorf("json.Decoder.Decode %w", err)
+	}
+
+	//perr("DEBUG getJson [%s] @ContentLength <%d> @Body [-"+NL+"%s"+NL+"-]", url, resp.ContentLength, respBody)
+	perr("DEBUG getJson [%s] @ContentLength <%d>", url, resp.ContentLength)
+	if respjson != nil {
+		*respjson = string(respBody)
+	}
+
+	return nil
 }
 
 func fileExists(path string) bool {
