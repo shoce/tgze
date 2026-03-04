@@ -1007,7 +1007,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, tgerr := tg.SendPhoto(tg.SendPhotoRequest{
 			ChatId:  fmt.Sprintf("%d", m.Chat.Id),
 			Photo:   ytlist.ThumbUrl,
-			Caption: tg.Bold(ytlist.Title) + NL + tg.Italic(tg.F("<%d> videos", len(ytlist.Videos))) + NL + tg.Link(ytlist.Id, ytid),
+			Caption: tg.Bold(tg.Esc(ytlist.Title)) + NL + tg.Italic(tg.Esc(tg.F("<%d> videos", len(ytlist.Videos)))) + NL + tg.Link(ytlist.Id, ytlistid),
 		}); tgerr != nil {
 			perr("ERROR tg.SendPhoto %v", tgerr)
 		}
