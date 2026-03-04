@@ -1007,7 +1007,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if _, tgerr := tg.SendPhoto(tg.SendPhotoRequest{
 			ChatId:  fmt.Sprintf("%d", m.Chat.Id),
 			Photo:   ytlist.ThumbUrl,
-			Caption: tg.Bold(tg.Esc(ytlist.Title)) + NL + tg.Italic(tg.Esc(tg.F("<%d> videos", len(ytlist.Videos)))) + NL + tg.Link(ytlistid, ytlisturl),
+			Caption: tg.Bold(tg.Esc(ytlist.Title)) + NL + tg.Italic(tg.Esc(tg.F("<%d> videos", len(ytlist.Videos)))) + NL + tg.Link(ytlistid, "https://"+ytlisturl),
 		}); tgerr != nil {
 			perr("ERROR tg.SendPhoto %v", tgerr)
 		}
@@ -1030,7 +1030,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				return m, err
 			}
 			if len(ytlist.Videos) > 3 {
-				sleepdur := 11 * time.Second
+				sleepdur := 7 * time.Second
 				perr("DEBUG sleeping <%v>", sleepdur)
 				time.Sleep(sleepdur)
 			}
