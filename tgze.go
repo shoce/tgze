@@ -1002,14 +1002,21 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 
 		for _, v := range ytlist.Videos {
-			if downloadvideo {
-				if err := postVideo(v, ytlist, m); err != nil {
-					return m, err
+			if Config.DssUrl != "" {
+				if downloadvideo {
+					err = postVideoDss(v, nil, m)
+				} else {
+					err = postAudioDss(v, nil, m)
 				}
 			} else {
-				if err := postAudio(v, ytlist, m); err != nil {
-					return m, err
+				if downloadvideo {
+					err = postVideo(v, ytlist, m)
+				} else {
+					err = postAudio(v, ytlist, m)
 				}
+			}
+			if err != nil {
+				return m, err
 			}
 			if len(ytlist.Videos) > 3 {
 				sleepdur := 11 * time.Second
@@ -1098,7 +1105,7 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	}
 	defer tgvideohttp.Body.Close()
 	if tgvideohttp.StatusCode != http.StatusOK {
-		return fmt.Errorf("GET %s status code %d", videourl, tgvideohttp.StatusCode)
+		return fmt.Errorf("http get [%s] status code <%d>", videourl, tgvideohttp.StatusCode)
 	}
 
 	if _, tgerr := tg.SendVideoFile(tg.SendVideoFileRequest{
@@ -1159,7 +1166,7 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	}
 	defer tgaudiohttp.Body.Close()
 	if tgaudiohttp.StatusCode != http.StatusOK {
-		return fmt.Errorf("GET %s status code %d", audiourl, tgaudiohttp.StatusCode)
+		return fmt.Errorf("http get [%s] status code <%d>", audiourl, tgaudiohttp.StatusCode)
 	}
 
 	thumburl := fmt.Sprintf("%s/thumb/youtu.be/%s", Config.DssUrl, v.Id)
@@ -1171,7 +1178,7 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	}
 	defer thumburlhttp.Body.Close()
 	if thumburlhttp.StatusCode != http.StatusOK {
-		return fmt.Errorf("GET %s status code %d", thumburl, thumburlhttp.StatusCode)
+		return fmt.Errorf("http get [%s] status code <%d>", thumburl, thumburlhttp.StatusCode)
 	}
 
 	if _, tgerr := tg.SendAudioFile(tg.SendAudioFileRequest{
