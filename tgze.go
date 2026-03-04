@@ -1165,6 +1165,7 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		return err
 	}
 	defer tgaudiohttp.Body.Close()
+	perr("DEBUG http get [%s] StatusCode <%d> ContentLength <%d>", audiourl, tgaudiohttp.StatusCode, tgaudiohttp.ContentLength)
 	if tgaudiohttp.StatusCode != http.StatusOK {
 		return fmt.Errorf("http get [%s] status code <%d>", audiourl, tgaudiohttp.StatusCode)
 	}
@@ -1176,6 +1177,7 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		return err
 	}
 	defer tgthumbhttp.Body.Close()
+	perr("DEBUG http get [%s] StatusCode <%d> ContentLength <%d>", thumburl, tgthumbhttp.StatusCode, tgthumbhttp.ContentLength)
 	if tgthumbhttp.StatusCode != http.StatusOK {
 		return fmt.Errorf("http get [%s] status code <%d>", thumburl, tgthumbhttp.StatusCode)
 	}
