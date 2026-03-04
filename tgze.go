@@ -1170,15 +1170,14 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	}
 
 	thumburl := fmt.Sprintf("%s/thumb/youtu.be/%s", Config.DssUrl, v.Id)
-	tgthumbhttp, err := http.Get(thumburl)
 	perr("DEBUG http get [%s]", thumburl)
-	thumburlhttp, err := http.Get(thumburl)
+	tgthumbhttp, err := http.Get(thumburl)
 	if err != nil {
 		return err
 	}
-	defer thumburlhttp.Body.Close()
-	if thumburlhttp.StatusCode != http.StatusOK {
-		return fmt.Errorf("http get [%s] status code <%d>", thumburl, thumburlhttp.StatusCode)
+	defer tgthumbhttp.Body.Close()
+	if tgthumbhttp.StatusCode != http.StatusOK {
+		return fmt.Errorf("http get [%s] status code <%d>", thumburl, tgthumbhttp.StatusCode)
 	}
 
 	if _, tgerr := tg.SendAudioFile(tg.SendAudioFileRequest{
