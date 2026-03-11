@@ -106,7 +106,8 @@ type TgZeConfig struct {
 }
 
 var (
-	Ctx context.Context
+	TZIST = time.FixedZone("IST", 330*60)
+	Ctx   context.Context
 
 	HttpClient = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtUserAgent}}
 
@@ -1273,7 +1274,7 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 		)
 	}
 
-	tgvideoFilename := fmt.Sprintf("%s.%s.mp4", ts(), v.Id)
+	tgvideoFilename := fmt.Sprintf("%s.%s.mp4", fmtfiletime(time.Now()), v.Id)
 	tgvideoFile, err := os.OpenFile(tgvideoFilename, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return fmt.Errorf("os.OpenFile %w", err)
@@ -1295,7 +1296,7 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 	perr("downloaded url [youtu.be/%s] video in <%v>", v.Id, time.Since(t0).Truncate(time.Second))
 
 	if Config.FfmpegPath != "" && targetVideoBitrateKbps > 0 {
-		filename2 := fmt.Sprintf("%s.%s.v%dk.a%dk.mp4", ts(), v.Id, targetVideoBitrateKbps, Config.TgVideoAudioBitrateKbps)
+		filename2 := fmt.Sprintf("%s.%s.v%dk.a%dk.mp4", fmtfiletime(time.Now()), v.Id, targetVideoBitrateKbps, Config.TgVideoAudioBitrateKbps)
 		err := FfmpegTranscode(tgvideoFilename, filename2, targetVideoBitrateKbps, Config.TgVideoAudioBitrateKbps)
 		if err != nil {
 			return fmt.Errorf("FfmpegTranscode `%s`: %w", tgvideoFilename, err)
@@ -1400,7 +1401,7 @@ func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 		)
 	}
 
-	tgaudioFilename := fmt.Sprintf("%s.%s.m4a", ts(), v.Id)
+	tgaudioFilename := fmt.Sprintf("%s.%s.m4a", fmtfiletime(time.Now()), v.Id)
 	tgaudioFile, err := os.OpenFile(tgaudioFilename, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return fmt.Errorf("create file %w", err)
@@ -1430,7 +1431,7 @@ func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 	perr("downloaded url [youtu.be/%s] audio in <%v>", v.Id, time.Since(t0).Truncate(time.Second))
 
 	if Config.FfmpegPath != "" && targetAudioBitrateKbps > 0 {
-		filename2 := fmt.Sprintf("%s.%s.a%dk.m4a", ts(), v.Id, targetAudioBitrateKbps)
+		filename2 := fmt.Sprintf("%s.%s.a%dk.m4a", fmtfiletime(time.Now()), v.Id, targetAudioBitrateKbps)
 		err := FfmpegTranscode(tgaudioFilename, filename2, 0, targetAudioBitrateKbps)
 		if err != nil {
 			return fmt.Errorf("FfmpegTranscode %s %w", tgaudioFilename, err)
@@ -1751,12 +1752,20 @@ func beats(td time.Duration) int {
 	return int(td / BEAT)
 }
 
-func ts() string {
-	tnow := time.Now().In(time.FixedZone("IST", 330*60))
+func fmtfiletime(t time.Time) string {
+	t = t.UTC()
 	return fmt.Sprintf(
-		"%d%02d%02d:%02d%02dॐ",
-		tnow.Year()%1000, tnow.Month(), tnow.Day(),
-		tnow.Hour(), tnow.Minute(),
+		"%03d.%02d%02d.%02d%02d%02d",
+		t.Year()%1000, t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second(),
+	)
+}
+
+func fmttime(t time.Time, tz string) string {
+	return fmt.Sprintf(
+		"%03d:%02d%02d:%02d%02d%02d"+tz,
+		t.Year()%1000, t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second(),
 	)
 }
 
@@ -1764,6 +1773,8 @@ func perr(msg string, args ...interface{}) {
 	if strings.HasPrefix(msg, "DEBUG ") && !Config.DEBUG {
 		return
 	}
+	ts := time.Now().In(TZIST)
+	tz := "ॐ"
 	msgtext := msg
 	if len(args) > 0 {
 		msgtext = fmt.Sprintf(msgtext, args...)
@@ -1774,7 +1785,7 @@ func perr(msg string, args ...interface{}) {
 	if Config.YtKey != "" {
 		msgtext = strings.ReplaceAll(msgtext, Config.YtKey, "[Config.YtKey]")
 	}
-	fmt.Fprint(os.Stderr, ts()+SP+msgtext+NL)
+	fmt.Fprint(os.Stderr, "<"+fmttime(ts, tz)+">"+SP+msgtext+NL)
 }
 
 func (config *TgZeConfig) Get() error {
