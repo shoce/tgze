@@ -1,12 +1,6 @@
-/*
-
-https://pkg.go.dev/github.com/kkdai/youtube/v2/
-
-go get github.com/kkdai/youtube/v2@master
-
-GoGet GoFmt GoBuildNull
-
-*/
+// https://pkg.go.dev/github.com/kkdai/youtube/v2/
+// go get github.com/kkdai/youtube/v2@master
+// GoGet GoFmt GoBuildNull
 
 package main
 
@@ -35,7 +29,8 @@ import (
 	_ "golang.org/x/image/webp"
 
 	ytdl "github.com/kkdai/youtube/v2"
-	yaml "gopkg.in/yaml.v3"
+	// https://pkg.go.dev/github.com/goccy/go-yaml
+	yaml "github.com/goccy/go-yaml"
 
 	"github.com/shoce/tg"
 )
@@ -1813,7 +1808,7 @@ func (config *TgZeConfig) Get() error {
 func (config *TgZeConfig) Put() error {
 	//perr("DEBUG Config.Put url [%s] %+v", config.YssUrl, config)
 
-	rbb, err := yaml.Marshal(config)
+	rbb, err := yaml.MarshalWithOptions(config, yaml.JSON(), yaml.Flow(false))
 	if err != nil {
 		return err
 	}
