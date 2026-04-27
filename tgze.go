@@ -1089,7 +1089,10 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	if err != nil {
 		return err
 	}
-	perr("DEBUG vinfo %+v", vinfo)
+	perr(
+		"DEBUG vinfo { Id [%s] Channel [%s] Title [%s] FullTitle [%s] Timestamp <%d> Duration <%d> Width <%d> Height <%d> Description [%s] }",
+		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, vinfo.Timestamp, vinfo.Duration, vinfo.Width, vinfo.Height, strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
+	)
 
 	tgvideoCaption := fmt.Sprintf(
 		"%s %s"+NL+
@@ -1150,7 +1153,10 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	if err != nil {
 		return err
 	}
-	perr("DEBUG vinfo %+v", vinfo)
+	perr(
+		"DEBUG vinfo { Id [%s] Channel [%s] Title [%s] FullTitle [%s] Timestamp <%d> Duration <%d> Abr <%d> Description [%s] }",
+		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, vinfo.Timestamp, vinfo.Duration, vinfo.Abr, strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
+	)
 
 	tgaudioCaption := fmt.Sprintf(
 		"%s %s"+NL+
@@ -1819,6 +1825,7 @@ func (config *TgZeConfig) Get() error {
 func (config *TgZeConfig) Put() error {
 	//perr("DEBUG Config.Put url [%s] %+v", config.YssUrl, config)
 
+	// https://pkg.go.dev/github.com/goccy/go-yaml#MarshalWithOptions
 	rbb, err := yaml.MarshalWithOptions(config, yaml.JSON(), yaml.Flow(false))
 	if err != nil {
 		return err
