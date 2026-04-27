@@ -106,8 +106,7 @@ type TgZeConfig struct {
 }
 
 var (
-	TZIST = time.FixedZone("IST", 330*60)
-	Ctx   context.Context
+	Ctx context.Context
 
 	HttpClient = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtUserAgent}}
 
@@ -115,6 +114,8 @@ var (
 
 	YtdlCl         ytdl.Client
 	YtRe, YtListRe *regexp.Regexp
+
+	F = fmt.Sprintf
 )
 
 func init() {
@@ -245,7 +246,7 @@ func main() {
 		<-sigterm
 		tg.SendMessage(tg.SendMessageRequest{
 			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
-			Text: tg.Esc(tg.F(
+			Text: tg.Esc(F(
 				"%s sigterm", os.Args[0],
 			)),
 		})
@@ -408,7 +409,7 @@ func TgGetUpdates() (err error) {
 	}
 
 	for _, u := range uu {
-		perr("Update %s", strings.ReplaceAll(tg.F("%+v", u), NL, "<NL>"))
+		perr("Update %s", strings.ReplaceAll(F("%+v", u), NL, "<NL>"))
 		/*
 			if len(TgUpdateLog) > 0 && u.UpdateId < TgUpdateLog[len(TgUpdateLog)-1] {
 				log("WARNING this telegram update id <%d> is older than last id <%d>, skipping", u.UpdateId, TgUpdateLog[len(TgUpdateLog)-1])
@@ -512,7 +513,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}
 	}
 
-	perr("Update @Message %s", strings.ReplaceAll(tg.F("%+v", m), NL, "<NL>"))
+	perr("Update @Message %s", strings.ReplaceAll(F("%+v", m), NL, "<NL>"))
 
 	if !strings.Contains(m.Text, NL) {
 		perr("Message from [%s] chat [%s] title [%s] text [%s]", m.From.Username, m.Chat.Username, m.Chat.Title, m.Text)
@@ -957,8 +958,8 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		return m, nil
 	}
 
-	ytlisturl := tg.F("youtube.com/playlist?list=%s", ytlistid)
-	yturl := tg.F("youtu.be/%s", ytid)
+	ytlisturl := F("youtube.com/playlist?list=%s", ytlistid)
+	yturl := F("youtu.be/%s", ytid)
 
 	if ytlistid != "" && m.Text != ytlisturl {
 		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
@@ -1154,8 +1155,8 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		return err
 	}
 	perr(
-		"DEBUG vinfo { Id [%s] Channel [%s] Title [%s] FullTitle [%s] Timestamp <%d> Duration <%d> Abr <%d> Description [%s] }",
-		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, vinfo.Timestamp, vinfo.Duration, vinfo.Abr, strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
+		"DEBUG vinfo { Id [%s] Channel [%s] Title [%s] FullTitle [%s] Timestamp <%s> Duration <%d> Abr <%d> Description [%s] }",
+		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, fmttime(time.Unix(vinfo.Timestamp, 0)), vinfo.Duration, int(vinfo.Abr), strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
 	)
 
 	tgaudioCaption := fmt.Sprintf(
@@ -1767,20 +1768,25 @@ func fmtfiletime(t time.Time) string {
 	)
 }
 
-func fmttime(t time.Time, tz string) string {
-	return fmt.Sprintf(
-		"%03d:%02d%02d:%02d%02d%02d"+tz,
-		t.Year()%1000, t.Month(), t.Day(),
-		t.Hour(), t.Minute(), t.Second(),
+func fmttime(t time.Time) string {
+	ts := F(
+		"%d:%02d%02d:%02d%02d",
+		t.Year()%1000, t.Month(), t.Day(), t.Hour(), t.Minute(),
 	)
+	// https://pkg.go.dev/time#Time.Zone
+	if _, tzoffset := t.Zone(); tzoffset == 0 {
+		ts += "+"
+	} else {
+		ts += "-"
+	}
+	return ts
 }
 
 func perr(msg string, args ...interface{}) {
 	if strings.HasPrefix(msg, "DEBUG ") && !Config.DEBUG {
 		return
 	}
-	ts := time.Now().In(TZIST)
-	tz := "ॐ"
+	ts := time.Now()
 	msgtext := msg
 	if len(args) > 0 {
 		msgtext = fmt.Sprintf(msgtext, args...)
@@ -1791,7 +1797,7 @@ func perr(msg string, args ...interface{}) {
 	if Config.YtKey != "" {
 		msgtext = strings.ReplaceAll(msgtext, Config.YtKey, "[Config.YtKey]")
 	}
-	fmt.Fprint(os.Stderr, "<"+fmttime(ts, tz)+">"+SP+msgtext+NL)
+	fmt.Fprint(os.Stderr, "<"+fmttime(ts)+">"+SP+msgtext+NL)
 }
 
 func (config *TgZeConfig) Get() error {
