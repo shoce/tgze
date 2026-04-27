@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"os/exec"
@@ -39,6 +40,7 @@ const (
 	SP   = " "
 	NL   = "\n"
 	SPAC = "    "
+	SEP  = ","
 
 	BEAT = time.Duration(24) * time.Hour / 1000
 
@@ -1091,8 +1093,8 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		return err
 	}
 	perr(
-		"DEBUG vinfo { Id [%s] Channel [%s] Title [%s] FullTitle [%s] Timestamp <%d> Duration <%d> Width <%d> Height <%d> Description [%s] }",
-		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, vinfo.Timestamp, vinfo.Duration, vinfo.Width, vinfo.Height, strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
+		"DEBUG vinfo { Id [%s] Channel [%s] Title [%s] FullTitle [%s] Timestamp <%s> Duration <%s> Width <%d> Height <%d> Description [%s] }",
+		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, fmttime(time.Unix(vinfo.Timestamp, 0)), fmtdursec(uint64(vinfo.Duration)), vinfo.Width, vinfo.Height, strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
 	)
 
 	tgvideoCaption := fmt.Sprintf(
@@ -1155,8 +1157,8 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		return err
 	}
 	perr(
-		"DEBUG vinfo { Id [%s] Channel [%s] Title [%s] FullTitle [%s] Timestamp <%s> Duration <%d> Abr <%d> Description [%s] }",
-		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, fmttime(time.Unix(vinfo.Timestamp, 0)), vinfo.Duration, int(vinfo.Abr), strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
+		"DEBUG vinfo { Id [%s] Channel [%s] Title [%s] FullTitle [%s] Timestamp <%s> Duration <%s> Abr <%d> Description [%s] }",
+		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, fmttime(time.Unix(vinfo.Timestamp, 0)), fmtdursec(uint64(vinfo.Duration)), int(vinfo.Abr), strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
 	)
 
 	tgaudioCaption := fmt.Sprintf(
@@ -1780,6 +1782,25 @@ func fmttime(t time.Time) string {
 		ts += "-"
 	}
 	return ts
+}
+
+func fmtdursec(t uint64) string {
+	tdays, tsecs := t/(24*3600), t%(24*3600)
+	ts := seps(tsecs, 2) + "s"
+	if tdays > 0 {
+		ts = seps(tdays, 2) + "d" + SEP + ts
+	}
+	return ts
+}
+
+func seps(i uint64, e uint64) string {
+	ee := uint64(math.Pow(10, float64(e)))
+	if i < ee {
+		return F("%d", i%ee)
+	} else {
+		f := F("0%dd", e)
+		return F("%s"+SEP+"%"+f, seps(i/ee, e), i%ee)
+	}
 }
 
 func perr(msg string, args ...interface{}) {
