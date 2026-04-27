@@ -1181,7 +1181,7 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		return err
 	}
 	defer tgaudiohttp.Body.Close()
-	perr("DEBUG http get [%s] StatusCode <%d> ContentLength <%d>", audiourl, tgaudiohttp.StatusCode, tgaudiohttp.ContentLength)
+	perr("DEBUG http get [%s] StatusCode <%d> ContentLength <%s>", audiourl, tgaudiohttp.StatusCode, seps(uint64(tgaudiohttp.ContentLength), 3))
 	if tgaudiohttp.StatusCode != http.StatusOK {
 		return fmt.Errorf("http get [%s] status code <%d>", audiourl, tgaudiohttp.StatusCode)
 	}
@@ -1193,7 +1193,7 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		return err
 	}
 	defer tgthumbhttp.Body.Close()
-	perr("DEBUG http get [%s] StatusCode <%d> ContentLength <%d>", thumburl, tgthumbhttp.StatusCode, tgthumbhttp.ContentLength)
+	perr("DEBUG http get [%s] StatusCode <%d> ContentLength <%s>", thumburl, tgthumbhttp.StatusCode, seps(uint64(tgthumbhttp.ContentLength), 3))
 	if tgthumbhttp.StatusCode != http.StatusOK {
 		return fmt.Errorf("http get [%s] status code <%d>", thumburl, tgthumbhttp.StatusCode)
 	}
@@ -1716,8 +1716,8 @@ func getJson(url string, target interface{}, respjson *string) (err error) {
 		return fmt.Errorf("json.Decoder.Decode %w", err)
 	}
 
-	//perr("DEBUG getJson [%s] @ContentLength <%d> @Body [-"+NL+"%s"+NL+"-]", url, resp.ContentLength, respBody)
-	perr("DEBUG getJson [%s] @ContentLength <%d>", url, resp.ContentLength)
+	//perr("DEBUG getJson [%s] ContentLength <%s> @Body [-"+NL+"%s"+NL+"-]", url, seps(resp.ContentLength, 3), respBody)
+	perr("DEBUG getJson [%s] ContentLength <%s>", url, seps(uint64(resp.ContentLength), 3))
 	if respjson != nil {
 		*respjson = string(respBody)
 	}
