@@ -18,8 +18,8 @@ github.com/kkdai/youtube/v2 v2.10.6 h1:4sKaX6GtjbsDRnPINrf2rtBIxRKz5eXQZ5ccUVPjk
 github.com/kkdai/youtube/v2 v2.10.6/go.mod h1:Oj3uSagusCkXuPiripRDgAXyCaKIjAHAY90qC8Sd+m4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/shoce/tg v0.260414.131 h1:NOhn3nlXnidZ/kv2fNzrjJgHnfWBv2zNcwoLM9sK+9w=
-github.com/shoce/tg v0.260414.131/go.mod h1:0DTDEtKAWA6Qmpvm0tscXVmIgu2JNyNMGXP97XxovgY=
+github.com/shoce/tg v0.260517.627 h1:vHdSpFIFSFSlBTNtda1RaTAjdj9Psce/rh8HjsKbJBA=
+github.com/shoce/tg v0.260517.627/go.mod h1:0DTDEtKAWA6Qmpvm0tscXVmIgu2JNyNMGXP97XxovgY=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 golang.org/x/image v0.40.0 h1:Tw4GyDXMo+daZN1znreBRC3VayR1aLFUyUEOLUdW1a8=
