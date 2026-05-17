@@ -117,7 +117,8 @@ var (
 	YtdlCl         ytdl.Client
 	YtRe, YtListRe *regexp.Regexp
 
-	F = fmt.Sprintf
+	F    = fmt.Sprintf
+	pout = fmt.Print
 )
 
 func init() {
