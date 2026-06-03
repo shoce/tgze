@@ -4,9 +4,9 @@ go 1.26
 
 require (
 	github.com/goccy/go-yaml v1.19.2
-	github.com/kkdai/youtube/v2 v2.10.6
+	github.com/kkdai/youtube/v2 v2.10.7-0.20260602173030-08c2f7c74295
 	github.com/shoce/tg v0.260517.824
-	golang.org/x/image v0.40.0
+	golang.org/x/image v0.41.0
 )
 
 require (
