@@ -1,3 +1,4 @@
+// processTgUpdate
 // https://pkg.go.dev/github.com/kkdai/youtube/v2/
 // go get github.com/kkdai/youtube/v2@master
 // GoGet GoFmt GoBuildNull
@@ -22,17 +23,17 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
+	
 	"image"
 	_ "image/jpeg"
 	"image/png"
-
+	
 	_ "golang.org/x/image/webp"
-
+	
 	ytdl "github.com/kkdai/youtube/v2"
 	// https://pkg.go.dev/github.com/goccy/go-yaml
 	yaml "github.com/goccy/go-yaml"
-
+	
 	"github.com/shoce/tg"
 )
 
@@ -57,73 +58,73 @@ const (
 
 type TgZeConfig struct {
 	YssUrl string `yaml:"-"`
-
+	
 	DEBUG bool `yaml:"DEBUG"`
-
+	
 	Interval time.Duration `yaml:"Interval"`
-
+	
 	TgApiUrl string `yaml:"TgApiUrl"` // "https://api.telegram.org"
-
-	TgToken            string  `yaml:"TgToken"`
-	TgZeChatId         int64   `yaml:"TgZeChatId"`
-	TgUpdateLog        []int64 `yaml:"TgUpdateLog,flow"`
-	TgUpdateLogMaxSize int     `yaml:"TgUpdateLogMaxSize"` // 333
-
-	TgCommandChannels             string `yaml:"TgCommandChannels"`
+	
+	TgToken string `yaml:"TgToken"`
+	TgZeChatId int64 `yaml:"TgZeChatId"`
+	TgUpdateLog []int64 `yaml:"TgUpdateLog"`
+	TgUpdateLogMaxSize int `yaml:"TgUpdateLogMaxSize"` // 333
+	
+	TgCommandChannels string `yaml:"TgCommandChannels"`
 	TgCommandChannelsPromoteAdmin string `yaml:"TgCommandChannelsPromoteAdmin"`
-	TgCommandAudioCompress        string `yaml:"TgCommandAudioCompress"`
-
-	TgQuest1    string `yaml:"TgQuest1"`
+	TgCommandAudioCompress string `yaml:"TgCommandAudioCompress"`
+	
+	TgQuest1 string `yaml:"TgQuest1"`
 	TgQuest1Key string `yaml:"TgQuest1Key"`
-	TgQuest2    string `yaml:"TgQuest2"`
+	TgQuest2 string `yaml:"TgQuest2"`
 	TgQuest2Key string `yaml:"TgQuest2Key"`
-	TgQuest3    string `yaml:"TgQuest3"`
+	TgQuest3 string `yaml:"TgQuest3"`
 	TgQuest3Key string `yaml:"TgQuest3Key"`
-
-	TgAllChannelsChatIds []int64 `yaml:"TgAllChannelsChatIds,flow"`
-
-	TgMaxFileSizeBytes      int64 `yaml:"TgMaxFileSizeBytes"`      // 47 << 20
+	
+	TgAllChannelsChatIds []int64 `yaml:"TgAllChannelsChatIds"`
+	
+	TgMaxFileSizeBytes int64 `yaml:"TgMaxFileSizeBytes"` // 47 << 20
 	TgVideoAudioBitrateKbps int64 `yaml:"TgVideoAudioBitrateKbps"` // 60
-
-	FfmpegPath                string   `yaml:"FfmpegPath"`          // "/bin/ffmpeg"
-	FfmpegGlobalOptions       []string `yaml:"FfmpegGlobalOptions"` // []string{"-v", "error"}
-	FfmpegAudioCompressFilter string   `yaml:"FfmpegAudioCompressFilter"`
-
+	
+	FfmpegPath string `yaml:"FfmpegPath"` // "/bin/ffmpeg"
+	FfmpegGlobalOptions []string `yaml:"FfmpegGlobalOptions"` // []string{"-v", "error"}
+	FfmpegAudioCompressFilter string `yaml:"FfmpegAudioCompressFilter"`
+	
 	DssUrl string `yaml:"DssUrl"` // "http://dss:80"
-
-	YtKey        string `yaml:"YtKey"`
-	YtMaxResults int64  `yaml:"YtMaxResults"` // YtMaxResultsDefault
-	YtThrottle   int64  `yaml:"YtThrottle"`   // YtThrottleDefault
-
+	
+	YtKey string `yaml:"YtKey"`
+	YtMaxResults int64 `yaml:"YtMaxResults"` // YtMaxResultsDefault
+	YtThrottle int64 `yaml:"YtThrottle"` // YtThrottleDefault
+	
 	YtVisitorIdMaxAge time.Duration `yaml:"YtVisitorIdMaxAge"` // YtVisitorIdMaxAgeDefault 59*time.Minute
-	YtUserAgent       string        `yaml:"YtUserAgent"`       // "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Safari/605.1.15"
-
+	YtUserAgent string `yaml:"YtUserAgent"` // "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Safari/605.1.15"
+	
 	// https://golang.org/s/re2syntax
 	// (?:re)	non-capturing group
-	// TODO add support for https://www.youtube.com/watch?&list=PL5Qevr-CpW_yZZjYspehnFc-QRKQMCKHB&v=1nzx7O7ndfI&index=34
-	YtRe     string `yaml:"YtRe"`     // `(?:youtube.com/watch\?v=|youtu.be/|youtube.com/watch/|youtube.com/shorts/|youtube.com/live/)([0-9A-Za-z_-]+)`
+	// TODO add support for https://www.youtube.com/watch?&list=PL5Qevr-CpW_yZZjYspenFc-QRKQMCKHB&v=1nzx7O7ndfI&index=34
+	YtRe string `yaml:"YtRe"` // `(?:youtube.com/watch\?v=|youtu.be/|youtube.com/watch/|youtube.com/shorts/|youtube.com/live/)([0-9A-Za-z_-]+)`
 	YtListRe string `yaml:"YtListRe"` // `youtube.com/playlist\?list=([0-9A-Za-z_-]+)`
-
+	
 	YtDownloadLanguages []string `yaml:"YtDownloadLanguages"` // []string{"english", "german", "russian", "ukrainian"}
 }
 
 var (
 	Ctx context.Context
-
 	HttpClient = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport, Config.YtUserAgent}}
-
-	Config TgZeConfig
-
+	Config TgZeConfig 
 	YtdlCl         ytdl.Client
 	YtRe, YtListRe *regexp.Regexp
-
-	F    = fmt.Sprintf
+	
+	F = fmt.Sprintf
+	FI = strconv.FormatInt
+	EF = fmt.Errorf
 	pout = fmt.Print
 )
 
 func init() {
+	
 	Ctx = context.TODO()
-
+	
 	if v := os.Getenv("YssUrl"); v != "" {
 		Config.YssUrl = v
 	}
@@ -132,85 +133,71 @@ func init() {
 		os.Exit(1)
 	}
 	perr(F("YssUrl [%s]", Config.YssUrl))
-
+	
 	if err := ConfigGet(); err != nil {
 		perr(F("ERROR ConfigGet %v", err))
 		os.Exit(1)
 	}
-
+	
 }
 
 func ConfigGet() (err error) {
 	if err := Config.Get(); err != nil {
 		return err
 	}
-
 	if Config.DEBUG {
 		perr("DEBUG <true>")
 		tg.DEBUG = true
 	}
-
 	perr(F("Interval <%v>", Config.Interval))
 	if Config.Interval == 0 {
-		return fmt.Errorf("Interval empty")
+		return EF("Interval empty")
 	}
 
 	YtRe, err = regexp.Compile(Config.YtRe)
 	if err != nil {
-		return fmt.Errorf("Compile YtRe [%s] %w", Config.YtRe, err)
+		return EF("Compile YtRe [%s] %w", Config.YtRe, err)
 	}
 	YtListRe, err = regexp.Compile(Config.YtListRe)
 	if err != nil {
-		return fmt.Errorf("Compile YtListRe [%s] %w", Config.YtListRe, err)
+		return EF("Compile YtListRe [%s] %w", Config.YtListRe, err)
 	}
 
 	if Config.TgToken == "" {
-		return fmt.Errorf("ERROR TgToken empty")
+		return EF("ERROR TgToken empty")
 	}
-
 	tg.ApiToken = Config.TgToken
-
 	perr(F("TgApiUrl [%s]", Config.TgApiUrl))
 	if Config.TgApiUrl == "" {
 		return fmt.Errorf("TgApiUrl empty")
 	}
 
 	tg.ApiUrl = Config.TgApiUrl
-
 	//perr(F("TgUpdateLog %+v", Config.TgUpdateLog))
-
 	if Config.TgCommandChannels == "" {
 		Config.TgCommandChannels = TgCommandChannelsDefault
 	}
-
 	if Config.TgCommandAudioCompress == "" {
 		Config.TgCommandAudioCompress = TgCommandAudioCompressDefault
 	}
-
 	if Config.TgCommandChannelsPromoteAdmin == "" {
 		return fmt.Errorf("TgCommandChannelsPromoteAdmin empty")
 	}
-
 	perr(F("DssUrl [%s]", Config.DssUrl))
-
 	if Config.YtKey == "" {
 		return fmt.Errorf("YtKey empty")
 	}
-
 	if Config.YtMaxResults == 0 {
 		Config.YtMaxResults = YtMaxResultsDefault
 	}
-
 	if Config.YtThrottle == 0 {
 		Config.YtThrottle = YtThrottleDefault
 	}
 	perr(F("DEBUG YtThrottle <%d>", Config.YtThrottle))
-
 	if Config.YtVisitorIdMaxAge == 0 {
 		Config.YtVisitorIdMaxAge = YtVisitorIdMaxAgeDefault
 	}
 	ytdl.VisitorIdMaxAge = Config.YtVisitorIdMaxAge
-
 	// https://pkg.go.dev/github.com/kkdai/youtube/v2/#pkg-variables
 	/*
 		ytdl.IOSClient = ytdl.clientInfo{
@@ -223,7 +210,6 @@ func ConfigGet() (err error) {
 	*/
 	// WebClient AndroidClient IOSClient EmbeddedClient
 	ytdl.DefaultClient = ytdl.IOSClient
-
 	YtdlCl = ytdl.Client{
 		HTTPClient: &http.Client{
 			Transport: &UserAgentTransport{
@@ -232,13 +218,11 @@ func ConfigGet() (err error) {
 			},
 		},
 	}
-
 	perr(F("FfmpegPath [%s]", Config.FfmpegPath))
 	perr(F("DEBUG FfmpegGlobalOptions %s", AtonListStrings(Config.FfmpegGlobalOptions)))
 	if Config.FfmpegAudioCompressFilter == "" {
 		Config.FfmpegAudioCompressFilter = FfmpegAudioCompressFilterDefault
 	}
-
 	return nil
 }
 
@@ -397,20 +381,20 @@ func (uat *UserAgentTransport) RoundTrip(req *http.Request) (*http.Response, err
 }
 
 func TgGetUpdates() (err error) {
-
+	
 	var updatesoffset int64
-
+	
 	if len(Config.TgUpdateLog) > 0 {
 		updatesoffset = Config.TgUpdateLog[len(Config.TgUpdateLog)-1] + 1
 	}
-
+	
 	var uu []tg.Update
 	var tgupdatesjson string
 	uu, tgupdatesjson, err = tg.GetUpdates(updatesoffset)
 	if err != nil {
 		return fmt.Errorf("tg.GetUpdates %v", err)
 	}
-
+	
 	for _, u := range uu {
 		perr("Update" + SP + strings.ReplaceAll(F("%+v", u), NL, "<NL>"))
 		/*
@@ -430,7 +414,7 @@ func TgGetUpdates() (err error) {
 		if err := Config.Put(); err != nil {
 			return fmt.Errorf("Config.Put %v", err)
 		}
-
+		
 		if m, err := processTgUpdate(u, tgupdatesjson); err != nil {
 			perr(F("ERROR processTgUpdate %v", err))
 			if tgerr := tg.SetMessageReaction(tg.SetMessageReactionRequest{
@@ -443,9 +427,9 @@ func TgGetUpdates() (err error) {
 			return err
 		}
 	}
-
+	
 	return nil
-
+	
 }
 
 func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error) {
@@ -466,13 +450,13 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 		cmu := u.MyChatMember
 		reporttext := tg.Bold("MyChatMember") + NL +
-			tg.Bold("from") + " " + tg.Italic(tg.F("%s %s", cmu.From.FirstName, cmu.From.LastName)) + " " + tg.Esc(tg.F("username @%s", cmu.From.Username)) + " " + tg.Esc("id ") + tg.Code(tg.F("%d", cmu.From.Id)) + " " + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", cmu.From.Id)) + NL +
-			tg.Bold("chat") + " " + tg.Esc("id ") + tg.Code(tg.F("%d", cmu.Chat.Id)) + " " + tg.Esc(tg.F("username @%s", cmu.Chat.Username)) + " " + tg.Esc(tg.F("type %s", cmu.Chat.Type)) + " " + tg.Esc(tg.F("title %s", cmu.Chat.Title)) + NL +
-			tg.Bold("old member") + " " + tg.Esc(tg.F("username @%s", cmu.OldChatMember.User.Username)) + tg.Esc(" id ") + tg.Code(tg.F("%d", cmu.OldChatMember.User.Id)) + " " + tg.Esc(tg.F("status %s", cmu.OldChatMember.Status)) + NL +
-			tg.Bold("new member") + " " + tg.Esc(tg.F("username @%s", cmu.NewChatMember.User.Username)) + " " + tg.Esc(" id ") + tg.Code(tg.F("%d", cmu.NewChatMember.User.Id)) + " " + tg.Esc(tg.F("status %s", cmu.NewChatMember.Status))
+			tg.Bold("from") + SP + tg.Italic(tg.F("%s %s", cmu.From.FirstName, cmu.From.LastName)) + SP + tg.Esc(tg.F("username @%s", cmu.From.Username)) + SP + tg.Esc("id ") + tg.Code(tg.F("%d", cmu.From.Id)) + SP + tg.Link("profile", fmt.Sprintf("tg://user?id=%d", cmu.From.Id)) + NL +
+			tg.Bold("chat") + SP + tg.Esc("id ") + tg.Code(tg.F("%d", cmu.Chat.Id)) + SP + tg.Esc(tg.F("username @%s", cmu.Chat.Username)) + SP + tg.Esc(tg.F("type %s", cmu.Chat.Type)) + SP + tg.Esc(tg.F("title %s", cmu.Chat.Title)) + NL +
+			tg.Bold("old member") + SP + tg.Esc(F("username @%s", cmu.OldChatMember.User.Username)) + tg.Esc(" id ") + tg.Code(F("%d", cmu.OldChatMember.User.Id)) + SP + tg.Esc(F("status %s", cmu.OldChatMember.Status)) + NL +
+			tg.Bold("new member") + SP + tg.Esc(F("username @%s", cmu.NewChatMember.User.Username)) + SP + tg.Esc(" id ") + tg.Code(F("%d", cmu.NewChatMember.User.Id)) + SP + tg.Esc(tg.F("status %s", cmu.NewChatMember.Status))
 		if _, err := tg.SendMessage(tg.SendMessageRequest{
-			ChatId: fmt.Sprintf("%d", Config.TgZeChatId),
-			Text:   reporttext,
+			ChatId: F("%d", Config.TgZeChatId),
+			Text: reporttext,
 		}); err != nil {
 			perr(F("WARNING tg.SendMessage %v", err))
 			return m, err
@@ -581,18 +565,18 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 
 		if userid, err := strconv.ParseInt(mtff[1], 10, 64); err != nil {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+				ChatId: fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text:             tg.Esc(tg.F("ERROR %v", err)),
+				Text: tg.Esc(tg.F("ERROR %v", err)),
 			}); tgerr != nil {
 				perr(F("ERROR tg.SendMessage %v", tgerr))
 				return m, tgerr
 			}
 		} else {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
-				ChatId:           fmt.Sprintf("%d", m.Chat.Id),
+				ChatId: fmt.Sprintf("%d", m.Chat.Id),
 				ReplyToMessageId: m.MessageId,
-				Text:             tg.Link("user profile", fmt.Sprintf("tg://user?id=%d", userid)),
+				Text: tg.Link("user profile", fmt.Sprintf("tg://user?id=%d", userid)),
 			}); tgerr != nil {
 				perr(F("ERROR tg.SendMessage %v", tgerr))
 				return m, tgerr
@@ -796,7 +780,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				return m, tgerr
 			}
 		*/
-
+		
 		perr(F("TgCommandAudioCompress tgaudiofile %v", tgaudiofile))
 		if tgaudiofile.FileSize == 0 || tgaudiofile.FilePath == "" || !fileExists(tgaudiofile.FilePath) {
 			if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
@@ -810,12 +794,12 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				return m, tgerr
 			}
 		}
-
+		
 		filepath2 := tgaudiofile.FilePath + ".audio.compress..m4a"
 		perr(F("TgCommandAudioCompress filepath2 [%s]", filepath2))
-
+		
 		if fileExists(filepath2) {
-
+			
 			perr(F("TgCommandAudioCompress filepath2 [%s] exists", filepath2))
 			/*
 				filepath2stat, err := os.Stat(filepath2)
@@ -895,9 +879,9 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 					return m, err
 				}
 			*/
-
+			
 			perr(F("TgCommandAudioCompress finished audio compression into [%s] size <%d>", filepath2, filepath2stat.Size()))
-
+			
 			/*
 				if _, tgerr := tg.SendMessage(tg.SendMessageRequest{
 					ChatId:           fmt.Sprintf("%d", m.Chat.Id),
@@ -910,16 +894,16 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 					return m, tgerr
 				}
 			*/
-
+			
 		}
-
+		
 		tgaudioReader, err := os.Open(filepath2)
 		if err != nil {
 			perr(F("TgCommandAudioCompress ERROR os.Open [%s] %v", filepath2, err))
 			return m, err
 		}
 		defer tgaudioReader.Close()
-
+		
 		if _, err := tg.SendAudioFile(tg.SendAudioFileRequest{
 			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 			Caption:   m.ReplyToMessage.Caption + SP + "audio-compressed",
@@ -930,7 +914,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		}); err != nil {
 			return m, err
 		}
-
+		
 		err = tgaudioReader.Close()
 		if err != nil {
 			perr(F("ERROR os.File.Close %v", err))
@@ -941,64 +925,60 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				perr(F("ERROR os.Remove %v", err))
 			}
 		*/
-
+		
 		return m, nil
-
+		
 	}
-
+	
 	if len(mtff) != 1 {
 		return m, nil
 	}
-
+	
 	var ytid, ytlistid string
 	if ssm := YtListRe.FindStringSubmatch(m.Text); len(ssm) > 1 {
 		ytlistid = ssm[1]
 	} else if ssm := YtRe.FindStringSubmatch(m.Text); len(ssm) > 1 {
 		ytid = ssm[1]
 	}
-
 	if ytid == "" && ytlistid == "" {
 		return m, nil
 	}
-
+	
 	ytlisturl := F("youtube.com/playlist?list=%s", ytlistid)
 	yturl := F("youtu.be/%s", ytid)
-
 	if ytlistid != "" && m.Text != ytlisturl {
 		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
-			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+			ChatId: FI(m.Chat.Id, 10),
 			MessageId: m.MessageId,
-			Text:      tg.Esc(ytlisturl),
+			Text: tg.Esc(ytlisturl),
 		}); tgerr != nil {
 			perr(F("ERROR tg.EditMessageText %v", tgerr))
 		}
 	}
-
 	if ytid != "" && m.Text != yturl {
 		if _, tgerr := tg.EditMessageText(tg.EditMessageTextRequest{
-			ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+			ChatId: FI(m.Chat.Id, 10),
 			MessageId: m.MessageId,
-			Text:      tg.Esc(yturl),
+			Text: tg.Esc(yturl),
 		}); tgerr != nil {
 			perr(F("ERROR tg.EditMessageText %v", tgerr))
 		}
 	}
-
 	if tgerr := tg.SetMessageReaction(tg.SetMessageReactionRequest{
-		ChatId:    fmt.Sprintf("%d", m.Chat.Id),
+		ChatId: FI(m.Chat.Id, 10),
 		MessageId: m.MessageId,
-		Reaction:  []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "👾"}},
+		Reaction: []tg.ReactionTypeEmoji{tg.ReactionTypeEmoji{Emoji: "👾"}},
 	}); tgerr != nil {
 		perr(F("ERROR tg.SetMessageReaction [👾] %v", tgerr))
 	}
-
+	
 	var downloadvideo bool
 	if strings.HasPrefix(strings.ToLower(m.Chat.Title), "v") {
 		downloadvideo = true
 	}
-
+	
 	if ytlistid != "" {
-
+	
 		ytlist, err := getList(ytlistid)
 		if err != nil {
 			return m, fmt.Errorf("getList %w", err)
@@ -1035,11 +1015,11 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 				time.Sleep(sleepdur)
 			}
 		}
-
+		
 	}
-
+	
 	if ytid != "" {
-
+		
 		v := YtVideo{Id: ytid}
 		if Config.DssUrl != "" {
 			if downloadvideo {
@@ -1057,7 +1037,7 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 		if err != nil {
 			return m, err
 		}
-
+		
 		if ischannelpost {
 			if err := tg.DeleteMessage(tg.DeleteMessageRequest{
 				ChatId:    fmt.Sprintf("%d", m.Chat.Id),
@@ -1067,26 +1047,26 @@ func processTgUpdate(u tg.Update, tgupdatesjson string) (m tg.Message, err error
 			}
 		}
 	}
-
+	
 	return m, nil
 }
 
 func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
-
+	
 	var vinfo struct {
 		Id          string
 		Channel     string
 		Title       string
 		FullTitle   string
 		Description string
-
+		
 		Timestamp int64
 		Duration  int64
-
+		
 		Width  int
 		Height int
 	}
-
+	
 	infourl := fmt.Sprintf("%s/info/youtu.be/%s", Config.DssUrl, v.Id)
 	perr(F("DEBUG http get [%s]", infourl))
 	err := getJson(infourl, &vinfo, nil)
@@ -1097,7 +1077,7 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		"DEBUG vinfo { Id [%s] Channel [%s] Title [%s] FullTitle [%s] Timestamp <%s> Duration <%s> Width <%d> Height <%d> Description [%s] }",
 		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, fmttime(time.Unix(vinfo.Timestamp, 0)), fmtdursec(uint64(vinfo.Duration)), vinfo.Width, vinfo.Height, strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
 	))
-
+	
 	tgvideoCaption := fmt.Sprintf(
 		"%s %s"+NL+
 			"youtu.be/%s %s %dp",
@@ -1110,7 +1090,7 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 			v.PlaylistIndex+1, ytlist.Size, ytlist.Title,
 		)
 	}
-
+	
 	videourl := fmt.Sprintf("%s/video/youtu.be/%s", Config.DssUrl, v.Id)
 	perr(F("DEBUG http get [%s]", videourl))
 	tgvideohttp, err := http.Get(videourl)
@@ -1121,7 +1101,7 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	if tgvideohttp.StatusCode != http.StatusOK {
 		return fmt.Errorf("http get [%s] status code <%d>", videourl, tgvideohttp.StatusCode)
 	}
-
+	
 	if _, tgerr := tg.SendVideoFile(tg.SendVideoFileRequest{
 		ChatId:   fmt.Sprintf("%d", m.Chat.Id),
 		Caption:  tgvideoCaption,
@@ -1132,22 +1112,22 @@ func postVideoDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 	}); tgerr != nil {
 		return fmt.Errorf("tg.SendVideoFile %w", err)
 	}
-
+	
 	return nil
 }
 
 func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
-
+	
 	var vinfo struct {
 		Id          string
 		Channel     string
 		Title       string
 		FullTitle   string
 		Description string
-
+	
 		Timestamp int64
 		Duration  int64
-
+	
 		Abr float64
 	}
 
@@ -1162,7 +1142,7 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		vinfo.Id, vinfo.Channel, vinfo.Title, vinfo.FullTitle, fmttime(time.Unix(vinfo.Timestamp, 0)), fmtdursec(uint64(vinfo.Duration)), int(vinfo.Abr), strings.ReplaceAll(vinfo.Description, NL, "<NL>"),
 	))
 
-	tgaudioCaption := fmt.Sprintf(
+	tgaudioCaption := F(
 		"%s %s"+NL+
 			"youtu.be/%s %s %dkbps",
 		vinfo.FullTitle, time.Unix(vinfo.Timestamp, 0).Format("2006/01/02"),
@@ -1175,40 +1155,40 @@ func postAudioDss(v YtVideo, ytlist *YtList, m tg.Message) error {
 		)
 	}
 
-	audiourl := fmt.Sprintf("%s/audio/youtu.be/%s", Config.DssUrl, v.Id)
+	audiourl := F("%s/audio/youtu.be/%s", Config.DssUrl, v.Id)
 	perr(F("DEBUG http get [%s]", audiourl))
 	tgaudiohttp, err := http.Get(audiourl)
 	if err != nil {
 		return err
 	}
 	defer tgaudiohttp.Body.Close()
-	perr(F("DEBUG http get [%s] StatusCode <%d> ContentLength <%s>", audiourl, tgaudiohttp.StatusCode, seps(uint64(tgaudiohttp.ContentLength), 3)))
+	perr(F("DEBUG http get [%s] StatusCode <%d> ContentLength <%s>", audiourl, tgaudiohttp.StatusCode, seps(int64(tgaudiohttp.ContentLength), 3)))
 	if tgaudiohttp.StatusCode != http.StatusOK {
-		return fmt.Errorf("http get [%s] status code <%d>", audiourl, tgaudiohttp.StatusCode)
+		return EF("http get [%s] status code <%d>", audiourl, tgaudiohttp.StatusCode)
 	}
 
-	thumburl := fmt.Sprintf("%s/thumb/youtu.be/%s", Config.DssUrl, v.Id)
+	thumburl := F("%s/thumb/youtu.be/%s", Config.DssUrl, v.Id)
 	perr(F("DEBUG http get [%s]", thumburl))
 	tgthumbhttp, err := http.Get(thumburl)
 	if err != nil {
 		return err
 	}
 	defer tgthumbhttp.Body.Close()
-	perr(F("DEBUG http get [%s] StatusCode <%d> ContentLength <%s>", thumburl, tgthumbhttp.StatusCode, seps(uint64(tgthumbhttp.ContentLength), 3)))
+	perr(F("DEBUG http get [%s] StatusCode <%d> ContentLength <%s>", thumburl, tgthumbhttp.StatusCode, seps(int64(tgthumbhttp.ContentLength), 3)))
 	if tgthumbhttp.StatusCode != http.StatusOK {
-		return fmt.Errorf("http get [%s] status code <%d>", thumburl, tgthumbhttp.StatusCode)
+		return EF("http get [%s] status code <%d>", thumburl, tgthumbhttp.StatusCode)
 	}
 
 	if _, tgerr := tg.SendAudioFile(tg.SendAudioFileRequest{
-		ChatId:    fmt.Sprintf("%d", m.Chat.Id),
-		Caption:   tgaudioCaption,
+		ChatId: FI(m.Chat.Id, 10),
+		Caption: tgaudioCaption,
 		Performer: vinfo.Channel,
-		Title:     vinfo.FullTitle,
-		Duration:  time.Duration(vinfo.Duration) * time.Second,
-		Audio:     tgaudiohttp.Body,
-		Thumb:     tgthumbhttp.Body,
+		Title: vinfo.FullTitle,
+		Duration: time.Duration(vinfo.Duration) * time.Second,
+		Audio: tgaudiohttp.Body,
+		Thumb: tgthumbhttp.Body,
 	}); tgerr != nil {
-		return fmt.Errorf("tg.SendAudioFile %w", err)
+		return EF("tg.SendAudioFile %w", err)
 	}
 
 	return nil
@@ -1271,42 +1251,42 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 		videoFormat.LanguageDisplayName(),
 	))
 
-	tgvideoCaption := fmt.Sprintf(
+	tgvideoCaption := F(
 		"%s %s"+NL+
 			"youtu.be/%s %s %s",
 		vinfo.Title, vinfo.PublishDate.Format("2006/01/02"),
 		v.Id, vinfo.Duration, videoFormat.QualityLabel,
 	)
 	if ytlist.Id != "" && ytlist.Title != "" {
-		tgvideoCaption += NL + fmt.Sprintf(
+		tgvideoCaption += NL + F(
 			"%d/%d %s",
 			v.PlaylistIndex+1, ytlist.Size, ytlist.Title,
 		)
 	}
 
-	tgvideoFilename := fmt.Sprintf("%s.%s.mp4", fmtfiletime(time.Now()), v.Id)
+	tgvideoFilename := F("%s.%s.mp4", fmtfiletime(time.Now()), v.Id)
 	tgvideoFile, err := os.OpenFile(tgvideoFilename, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
-		return fmt.Errorf("os.OpenFile %w", err)
+		return EF("os.OpenFile %w", err)
 	}
 
 	t0 := time.Now()
 	_, err = io.Copy(tgvideoFile, ytstream)
 	if err != nil {
-		return fmt.Errorf("download youtu.be/%s video %w", v.Id, err)
+		return EF("download youtu.be/%s video %w", v.Id, err)
 	}
 
 	if err := ytstream.Close(); err != nil {
 		perr(F("ERROR ytstream.Close %v", err))
 	}
 	if err := tgvideoFile.Close(); err != nil {
-		return fmt.Errorf("os.File.Close %w", err)
+		return EF("os.File.Close %w", err)
 	}
 
 	perr(F("downloaded url [youtu.be/%s] video in <%v>", v.Id, time.Since(t0).Truncate(time.Second)))
 
 	if Config.FfmpegPath != "" && targetVideoBitrateKbps > 0 {
-		filename2 := fmt.Sprintf("%s.%s.v%dk.a%dk.mp4", fmtfiletime(time.Now()), v.Id, targetVideoBitrateKbps, Config.TgVideoAudioBitrateKbps)
+		filename2 := F("%s.%s.v%dk.a%dk.mp4", fmtfiletime(time.Now()), v.Id, targetVideoBitrateKbps, Config.TgVideoAudioBitrateKbps)
 		err := FfmpegTranscode(tgvideoFilename, filename2, targetVideoBitrateKbps, Config.TgVideoAudioBitrateKbps)
 		if err != nil {
 			return fmt.Errorf("FfmpegTranscode `%s`: %w", tgvideoFilename, err)
@@ -1319,41 +1299,34 @@ func postVideo(v YtVideo, ytlist *YtList, m tg.Message) error {
 	}
 
 	tgvideoReader, err := os.Open(tgvideoFilename)
-	if err != nil {
-		return fmt.Errorf("os.Open %w", err)
-	}
+	if err != nil { return EF("os.Open %w", err) }
 	defer tgvideoReader.Close()
 
 	if _, tgerr := tg.SendVideoFile(tg.SendVideoFileRequest{
-		ChatId:   fmt.Sprintf("%d", m.Chat.Id),
-		Caption:  tgvideoCaption,
-		Video:    tgvideoReader,
-		Width:    videoFormat.Width,
-		Height:   videoFormat.Height,
+		ChatId: F("%d", m.Chat.Id),
+		Caption: tgvideoCaption,
+		Video: tgvideoReader,
+		Width: videoFormat.Width,
+		Height: videoFormat.Height,
 		Duration: vinfo.Duration,
 	}); tgerr != nil {
-		return fmt.Errorf("tg.SendVideoFile %w", tgerr)
+		return EF("tg.SendVideoFile %w", tgerr)
 	}
-
+	
 	if err := tgvideoReader.Close(); err != nil {
 		perr(F("ERROR os.File.Close %v", err))
 	}
 	if err := os.Remove(tgvideoFilename); err != nil {
 		perr(F("ERROR os.Remove %v", err))
 	}
-
+	
 	return nil
 }
 
-func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
-
+func postAudio(v YtVideo, ytlist *YtList, m tg.Message) (err error) {
 	vinfo, err := YtdlCl.GetVideoContext(Ctx, v.Id)
-	if err != nil {
-		return err
-	}
-
-	var audioFormat, audioSmallestFormat ytdl.Format
-
+	if err != nil { return err } 
+	var audioFormat, audioSmallestFormat ytdl.Format 
 	// https://pkg.go.dev/github.com/kkdai/youtube/v2#FormatList
 	for _, f := range vinfo.Formats.WithAudioChannels() {
 		if !strings.Contains(f.MimeType, "/mp4") {
@@ -1378,45 +1351,32 @@ func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 			perr("DEBUG pick")
 			audioFormat = f
 		}
-	}
-
+	} 
 	var targetAudioBitrateKbps int64
 	if audioFormat.ItagNo == 0 {
 		audioFormat = audioSmallestFormat
 		targetAudioBitrateKbps = int64(((Config.TgMaxFileSizeBytes * 8) / int64(vinfo.Duration.Seconds()+1)) / 1024)
-	}
-
+	} 
 	ytstream, ytstreamsize, err := YtdlCl.GetStreamContext(Ctx, vinfo, &audioFormat)
-	if err != nil {
-		return fmt.Errorf("GetStreamContext %w", err)
-	}
-	defer ytstream.Close()
-
-	if ytstreamsize == 0 {
-		return fmt.Errorf("GetStreamContext stream size is zero")
-	}
-
-	ytstreamthrottled := &ThrottledReader{Reader: ytstream, Bps: int64(audioFormat.Bitrate) * Config.YtThrottle}
-
-	tgaudioCaption := fmt.Sprintf(
+	if err != nil { return EF("GetStreamContext %w", err) }
+	defer ytstream.Close() 
+	if ytstreamsize == 0 { return EF("GetStreamContext stream size is zero") } 
+	ytstreamthrottled := &ThrottledReader{Reader: ytstream, Bps: int64(audioFormat.Bitrate) * Config.YtThrottle} 
+	tgaudioCaption := F(
 		"%s %s "+NL+
 			"youtu.be/%s %s %dkbps",
 		vinfo.Title, vinfo.PublishDate.Format("2006/01/02"),
 		v.Id, vinfo.Duration, audioFormat.Bitrate/1024,
 	)
 	if ytlist != nil && ytlist.Title != "" {
-		tgaudioCaption += NL + fmt.Sprintf(
+		tgaudioCaption += NL + F(
 			"%d/%d %s",
 			v.PlaylistIndex+1, ytlist.Size, ytlist.Title,
 		)
-	}
-
+	} 
 	tgaudioFilename := fmt.Sprintf("%s.%s.m4a", fmtfiletime(time.Now()), v.Id)
 	tgaudioFile, err := os.OpenFile(tgaudioFilename, os.O_RDWR|os.O_CREATE, 0600)
-	if err != nil {
-		return fmt.Errorf("create file %w", err)
-	}
-
+	if err != nil { return EF("create file %w", err) } 
 	perr(F(
 		"downloading url [youtu.be/%s] audio size <%dmb> bitrate <%dkbps> duration <%v> language [%s]",
 		v.Id,
@@ -1424,35 +1384,27 @@ func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 		audioFormat.Bitrate>>10,
 		vinfo.Duration,
 		audioFormat.LanguageDisplayName(),
-	))
-
+	)) 
 	t0 := time.Now()
 	if _, err := io.Copy(tgaudioFile, ytstreamthrottled); err != nil {
-		return fmt.Errorf("download youtu.be/%s audio %w", v.Id, err)
-	}
-
-	if err := ytstream.Close(); err != nil {
-		perr(F("ERROR ytstream.Close %v", err))
-	}
-	if err := tgaudioFile.Close(); err != nil {
-		return fmt.Errorf("os.File.Close %w", err)
-	}
-
-	perr(F("downloaded url [youtu.be/%s] audio in <%v>", v.Id, time.Since(t0).Truncate(time.Second)))
-
+		return EF("download youtu.be/%s audio %w", v.Id, err)
+	} 
+	if err := ytstream.Close(); err != nil { perr(F("ERROR ytstream.Close %v", err)) }
+	if err := tgaudioFile.Close(); err != nil { return EF("os.File.Close %w", err) } 
+	perr(F("downloaded url [youtu.be/%s] audio in <%v>", v.Id, time.Since(t0).Truncate(time.Second))) 
 	if Config.FfmpegPath != "" && targetAudioBitrateKbps > 0 {
-		filename2 := fmt.Sprintf("%s.%s.a%dk.m4a", fmtfiletime(time.Now()), v.Id, targetAudioBitrateKbps)
+		filename2 := F("%s.%s.a%dk.m4a", fmtfiletime(time.Now()), v.Id, targetAudioBitrateKbps)
 		err := FfmpegTranscode(tgaudioFilename, filename2, 0, targetAudioBitrateKbps)
 		if err != nil {
-			return fmt.Errorf("FfmpegTranscode %s %w", tgaudioFilename, err)
+			return EF("FfmpegTranscode %s %w", tgaudioFilename, err)
 		}
-		tgaudioCaption += NL + fmt.Sprintf("(transcoded to audio:%dkbps)", targetAudioBitrateKbps)
+		tgaudioCaption += NL + F("(transcoded to audio:%dkbps)", targetAudioBitrateKbps)
 		if err := os.Remove(tgaudioFilename); err != nil {
 			perr(F("ERROR os.Remove %s %v", tgaudioFilename, err))
 		}
 		tgaudioFilename = filename2
 	}
-
+	
 	var thumbBytes []byte
 	var thumb ytdl.Thumbnail
 	if len(vinfo.Thumbnails) > 0 {
@@ -1467,8 +1419,7 @@ func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 		if err != nil {
 			perr(F("ERROR download thumb url [%s] %v", thumb.URL, err))
 		}
-	}
-
+	} 
 	if thumbImg, thumbImgFmt, err := image.Decode(bytes.NewReader(thumbBytes)); err != nil {
 		perr(F("ERROR thumb url [%s] decode %v", thumb.URL, err))
 	} else {
@@ -1480,14 +1431,10 @@ func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 			thumbBytes = thumbPngBuf.Bytes()
 			perr(F("DEBUG thumb url [%s] converted to fmt [png] size <%dkb>", thumb.URL, len(thumbBytes)>>10))
 		}
-	}
-
+	} 
 	tgaudioReader, err := os.Open(tgaudioFilename)
-	if err != nil {
-		return fmt.Errorf("os.Open %w", err)
-	}
-	defer tgaudioReader.Close()
-
+	if err != nil { return EF("os.Open %w", err) }
+	defer tgaudioReader.Close() 
 	if _, tgerr := tg.SendAudioFile(tg.SendAudioFileRequest{
 		ChatId:    fmt.Sprintf("%d", m.Chat.Id),
 		Caption:   tgaudioCaption,
@@ -1497,16 +1444,14 @@ func postAudio(v YtVideo, ytlist *YtList, m tg.Message) error {
 		Audio:     tgaudioReader,
 		Thumb:     bytes.NewReader(thumbBytes),
 	}); tgerr != nil {
-		return fmt.Errorf("tg.SendAudioFile %w", tgerr)
-	}
-
+		return EF("tg.SendAudioFile %w", tgerr)
+	} 
 	if err := tgaudioReader.Close(); err != nil {
 		perr(F("ERROR os.File.Close %v", err))
 	}
 	if err := os.Remove(tgaudioFilename); err != nil {
 		perr(F("ERROR os.Remove %v", err))
-	}
-
+	} 
 	return nil
 }
 
@@ -1515,24 +1460,15 @@ func getList(ytlistid string) (ytlistinfo *YtList, err error) {
 	var PlaylistUrl = fmt.Sprintf("https://www.googleapis.com/youtube/v3/playlists?maxResults=%d&part=snippet&id=%s&key=%s", Config.YtMaxResults, ytlistid, Config.YtKey)
 	var playlists YtPlaylists
 	err = getJson(PlaylistUrl, &playlists, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(playlists.Items) < 1 {
-		return nil, fmt.Errorf("no playlists found with provided id %s", ytlistid)
-	}
-	if len(playlists.Items) > 1 {
-		return nil, fmt.Errorf("more than one (%d) playlists found with provided id %s", len(playlists.Items), ytlistid)
-	}
-
+	if err != nil { return nil, err } 
+	if len(playlists.Items) < 1 { return nil, EF("no playlists found with provided id %s", ytlistid) }
+	if len(playlists.Items) > 1 { return nil, EF("more than one (%d) playlists found with provided id %s", len(playlists.Items), ytlistid) } 
 	list := YtList{
 		Id:    ytlistid,
 		Title: playlists.Items[0].Snippet.Title,
 	}
 	ytlistinfo = &list
 	perr(F("DEBUG getList playlist title [%s]", ytlistinfo.Title))
-
 	listthumbs := playlists.Items[0].Snippet.Thumbnails
 	if listthumbs.MaxRes.Url != "" {
 		ytlistinfo.ThumbUrl = listthumbs.MaxRes.Url
@@ -1546,43 +1482,33 @@ func getList(ytlistid string) (ytlistinfo *YtList, err error) {
 		perr("ERROR no list thumb url")
 	}
 	perr(F("DEBUG getList playlist thumb url [%s]", ytlistinfo.ThumbUrl))
-
+	
 	var videos []YtPlaylistItemSnippet
 	nextPageToken := ""
-
 	for nextPageToken != "" || len(videos) == 0 {
 		// https://developers.google.com/youtube/v3/docs/playlistItems
-		var PlaylistItemsUrl = fmt.Sprintf("https://www.googleapis.com/youtube/v3/playlistItems?maxResults=%d&part=snippet&playlistId=%s&key=%s&pageToken=%s", Config.YtMaxResults, ytlistid, Config.YtKey, nextPageToken)
-
+		var PlaylistItemsUrl = fmt.Sprintf("https://www.googleapis.com/youtube/v3/playlistItems?maxResults=%d&part=snippet&playlistId=%s&key=%s&pageToken=%s", Config.YtMaxResults, ytlistid, Config.YtKey, nextPageToken) 
 		var playlistItems YtPlaylistItems
 		err = getJson(PlaylistItemsUrl, &playlistItems, nil)
-		if err != nil {
-			return nil, err
-		}
-
+		if err != nil { return nil, err } 
 		if playlistItems.NextPageToken != nextPageToken {
 			nextPageToken = playlistItems.NextPageToken
 		} else {
 			nextPageToken = ""
-		}
-
+		} 
 		for _, i := range playlistItems.Items {
 			videos = append(videos, i.Snippet)
 		}
 	}
-
 	//sort.Slice(videos, func(i, j int) bool { return videos[i].PublishedAt < videos[j].PublishedAt })
 	//slices.Sort(videos)
-
 	ytlistinfo.Size = int64(len(videos))
-
 	for _, v := range videos {
 		ytlistinfo.Videos = append(ytlistinfo.Videos, YtVideo{
 			Id:            v.ResourceId.VideoId,
 			PlaylistIndex: v.Position,
 		})
 	}
-
 	return ytlistinfo, nil
 }
 
@@ -1592,9 +1518,8 @@ func FfmpegTranscode(filename, filename2 string, videoBitrateKbps, audioBitrateK
 	} else if audioBitrateKbps > 0 {
 		perr(F("DEBUG transcoding to audio <%dkbps>", audioBitrateKbps))
 	} else {
-		return fmt.Errorf("empty both videoBitrateKbps and audioBitrateKbps")
-	}
-
+		return EF("empty both videoBitrateKbps and audioBitrateKbps")
+	} 
 	ffmpegArgs := append(Config.FfmpegGlobalOptions,
 		"-i", filename,
 		"-f", "mp4",
@@ -1602,46 +1527,30 @@ func FfmpegTranscode(filename, filename2 string, videoBitrateKbps, audioBitrateK
 	if videoBitrateKbps > 0 {
 		ffmpegArgs = append(ffmpegArgs,
 			"-c:v", "h264",
-			"-b:v", fmt.Sprintf("%dk", videoBitrateKbps),
+			"-b:v", F("%dk", videoBitrateKbps),
 		)
 	}
 	if audioBitrateKbps > 0 {
 		ffmpegArgs = append(ffmpegArgs,
 			"-c:a", "aac",
-			"-b:a", fmt.Sprintf("%dk", audioBitrateKbps),
+			"-b:a", F("%dk", audioBitrateKbps),
 		)
 	}
-	ffmpegArgs = append(ffmpegArgs,
-		filename2,
-	)
-
-	ffmpegCmd := exec.Command(Config.FfmpegPath, ffmpegArgs...)
-
+	ffmpegArgs = append(ffmpegArgs, filename2, ) 
+	ffmpegCmd := exec.Command(Config.FfmpegPath, ffmpegArgs...) 
 	ffmpegCmdStderrPipe, err := ffmpegCmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("ffmpeg StderrPipe %w", err)
-	}
-
+	if err != nil { return EF("ffmpeg StderrPipe %w", err) } 
 	t0 := time.Now()
 	err = ffmpegCmd.Start()
-	if err != nil {
-		return fmt.Errorf("ffmpeg Start %w", err)
-	}
-
-	perr(F("DEBUG started command [%s]", ffmpegCmd.String()))
-
+	if err != nil { return EF("ffmpeg Start %w", err) } 
+	perr(F("DEBUG started command [%s]", ffmpegCmd.String())) 
 	_, err = io.Copy(os.Stderr, ffmpegCmdStderrPipe)
 	if err != nil {
 		perr(F("ERROR copy from ffmpeg stderr %v", err))
 	}
-
 	err = ffmpegCmd.Wait()
-	if err != nil {
-		return fmt.Errorf("ffmpeg Wait %w", err)
-	}
-
+	if err != nil { return EF("ffmpeg Wait %w", err) }
 	perr(F("DEBUG ffmpeg finished in <%v>", time.Since(t0).Truncate(time.Second)))
-
 	return nil
 }
 
@@ -1652,34 +1561,18 @@ func FfmpegAudioCompress(filename, filename2 string) (err error) {
 		"-af", Config.FfmpegAudioCompressFilter,
 		filename2,
 	)
-
 	ffmpegCmd := exec.Command(Config.FfmpegPath, ffmpegArgs...)
-
 	ffmpegCmdStderrPipe, err := ffmpegCmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("ffmpeg StderrPipe %w", err)
-	}
-
+	if err != nil { return EF("ffmpeg StderrPipe %w", err) } 
 	t0 := time.Now()
 	err = ffmpegCmd.Start()
-	if err != nil {
-		return fmt.Errorf("ffmpeg Start %w", err)
-	}
-
+	if err != nil { return EF("ffmpeg Start %w", err) } 
 	perr(F("DEBUG started command [%s]", ffmpegCmd.String()))
-
-	_, err = io.Copy(os.Stderr, ffmpegCmdStderrPipe)
-	if err != nil {
-		return fmt.Errorf("ffmpeg Copy from stderr %w", err)
-	}
-
+ _, err = io.Copy(os.Stderr, ffmpegCmdStderrPipe)
+	if err != nil { return EF("ffmpeg Copy from stderr %w", err) } 
 	err = ffmpegCmd.Wait()
-	if err != nil {
-		return fmt.Errorf("ffmpeg Wait %w", err)
-	}
-
-	perr(F("DEBUG ffmpeg finished in <%v>", time.Since(t0).Truncate(time.Second)))
-
+	if err != nil { return EF("ffmpeg Wait %w", err) } 
+	perr(F("DEBUG ffmpeg finished in <%v>", time.Since(t0).Truncate(time.Second))) 
 	return nil
 }
 
@@ -1698,64 +1591,43 @@ func (sr *ThrottledReader) Read(p []byte) (int, error) {
 
 func getJson(url string, target interface{}, respjson *string) (err error) {
 	resp, err := HttpClient.Get(url)
-	if err != nil {
-		return err
-	}
+	if err != nil { return err }
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("response http status %d %s", resp.StatusCode, resp.Status)
+		return EF("response http status %d %s", resp.StatusCode, resp.Status)
 	}
-
 	var respBody []byte
 	respBody, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("io.ReadAll %w", err)
-	}
-
+	if err != nil { return EF("io.ReadAll %w", err) }
 	err = json.NewDecoder(bytes.NewBuffer(respBody)).Decode(target)
-	if err != nil {
-		return fmt.Errorf("json.Decoder.Decode %w", err)
-	}
-
-	//perr(F("DEBUG getJson [%s] ContentLength <%s> @Body [-"+NL+"%s"+NL+"-]", url, seps(resp.ContentLength, 3), respBody))
-	perr(F("DEBUG getJson [%s] ContentLength <%s>", url, seps(uint64(resp.ContentLength), 3)))
+	if err != nil { return EF("json.Decoder.Decode %w", err) }
+	//perr(F("DEBUG getJson [%s] ContentLength <%s> @Body [-"+NL+"%s"+NL+"-]", url, seps(int64(resp.ContentLength), 3), respBody))
+	perr(F("DEBUG getJson [%s] ContentLength <%s>", url, seps(int64(resp.ContentLength), 3)))
 	if respjson != nil {
 		*respjson = string(respBody)
 	}
-
 	return nil
 }
 
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
-	if err != nil && errors.Is(err, os.ErrNotExist) {
-		return false
-	}
+	if err != nil && errors.Is(err, os.ErrNotExist) { return false }
 	return true
 }
 
 func downloadFile(url string) ([]byte, error) {
 	resp, err := HttpClient.Get(url)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 	defer resp.Body.Close()
-
 	bb := bytes.NewBuffer(nil)
-
-	if _, err := io.Copy(bb, resp.Body); err != nil {
-		return nil, err
-	}
-
+	if _, err := io.Copy(bb, resp.Body); err != nil { return nil, err }
 	return bb.Bytes(), nil
 }
 
 func AtonListStrings(ss []string) string {
 	var aa []string
-	for _, s := range ss {
-		aa = append(aa, "["+s+"]")
-	}
-	return "( " + strings.Join(aa, " ") + " )"
+	for _, s := range ss { aa = append(aa, "["+s+"]") }
+	return "( " + strings.Join(aa, SP) + " )"
 }
 
 func beats(td time.Duration) int {
@@ -1764,7 +1636,7 @@ func beats(td time.Duration) int {
 
 func fmtfiletime(t time.Time) string {
 	t = t.UTC()
-	return fmt.Sprintf(
+	return F(
 		"%03d.%02d%02d.%02d%02d%02d",
 		t.Year()%1000, t.Month(), t.Day(),
 		t.Hour(), t.Minute(), t.Second(),
@@ -1786,7 +1658,8 @@ func fmttime(t time.Time) string {
 }
 
 func fmtdursec(t uint64) string {
-	tdays, tsecs := t/(24*3600), t%(24*3600)
+	tdays := int64(t/(24*3600))
+	tsecs := int64(t%(24*3600))
 	ts := seps(tsecs, 2) + "s"
 	if tdays > 0 {
 		ts = seps(tdays, 2) + "d" + SEP + ts
@@ -1794,20 +1667,18 @@ func fmtdursec(t uint64) string {
 	return ts
 }
 
-func seps(i uint64, e uint64) string {
-	ee := uint64(math.Pow(10, float64(e)))
+func seps(i int64, e int64) string {
+	ee := int64(math.Pow(10, float64(e)))
+	f := "%0"+FI(e, 10)+"d"
 	if i < ee {
-		return F("%d", i%ee)
+		return FI(i%ee, 10)
 	} else {
-		f := F("0%dd", e)
-		return F("%s"+SEP+"%"+f, seps(i/ee, e), i%ee)
+		return seps(i/ee, e)+SEP+F(f , i%ee)
 	}
 }
 
 func perr(msgtext string) {
-	if strings.HasPrefix(msgtext, "DEBUG ") && !Config.DEBUG {
-		return
-	}
+	if strings.HasPrefix(msgtext, "DEBUG ") && !Config.DEBUG { return }
 	tnow := time.Now()
 	if Config.TgToken != "" {
 		msgtext = strings.ReplaceAll(msgtext, Config.TgToken, "[Config.TgToken]")
@@ -1820,53 +1691,30 @@ func perr(msgtext string) {
 
 func (config *TgZeConfig) Get() error {
 	req, err := http.NewRequest(http.MethodGet, config.YssUrl, nil)
-	if err != nil {
-		return err
-	}
-
+	if err != nil { return err } 
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
+	if err != nil { return err }
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("yss response status %s", resp.Status)
-	}
-
+		return EF("yss response status %s", resp.Status)
+	} 
 	rbb, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if err := yaml.Unmarshal(rbb, config); err != nil {
-		return err
-	}
-
-	//perr(F("DEBUG Config.Get %+v", config))
-
+	if err != nil { return err } 
+	if err := yaml.Unmarshal(rbb, config); err != nil { return err } 
+	//perr(F("DEBUG Config.Get %+v", config)) 
 	return nil
 }
 
 func (config *TgZeConfig) Put() error {
 	//perr(F("DEBUG Config.Put url [%s] %+v", config.YssUrl, config))
-
 	// https://pkg.go.dev/github.com/goccy/go-yaml#MarshalWithOptions
 	rbb, err := yaml.MarshalWithOptions(config, yaml.JSON(), yaml.Flow(false))
-	if err != nil {
-		return err
-	}
-
+	if err != nil { return err }
 	req, err := http.NewRequest(http.MethodPut, config.YssUrl, bytes.NewBuffer(rbb))
-	if err != nil {
-		return err
-	}
-
+	if err != nil { return err }
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
+	if err != nil { return err }
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("yss response status %s", resp.Status)
+		return EF("yss response status %s", resp.Status)
 	}
-
 	return nil
 }
