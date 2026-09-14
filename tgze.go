@@ -30,7 +30,7 @@ import (
 	
 	_ "golang.org/x/image/webp"
 	
-	ytdl "github.com/kkdai/youtube/v2"
+	ytdl "github.com/shoce/youtube/v2"
 	// https://pkg.go.dev/github.com/goccy/go-yaml
 	yaml "github.com/goccy/go-yaml"
 	
