@@ -12,7 +12,7 @@ require (
 require (
 	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/dlclark/regexp2/v2 v2.8.0 // indirect
-	github.com/dop251/goja v0.0.0-20260911104922-fabc3b8078ad // indirect
+	github.com/dop251/goja v0.0.0-20260917113740-793a2a65c13b // indirect
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/google/pprof v0.0.0-20260906184651-6331bc6350fe // indirect
 	golang.org/x/text v0.42.0 // indirect
