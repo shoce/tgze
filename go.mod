@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/goccy/go-yaml v1.19.2
-	github.com/shoce/tg v0.260517.824
+	github.com/shoce/tg v0.260924.138
 	github.com/shoce/youtube/v2 v2.0.0-20260914150106-376d2d20432f
 	golang.org/x/image v0.46.0
 )
