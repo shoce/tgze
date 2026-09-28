@@ -70,7 +70,7 @@ type TgZeConfig struct {
 	
 	TgToken string `yaml:"TgToken"`
 	TgZeChatId int64 `yaml:"TgZeChatId"`
-	TgUpdateLog []int64 `yaml:"TgUpdateLog"`
+	TgUpdateLog []int64 `yaml:"TgUpdateLog,flow"`
 	TgUpdateLogMaxSize int `yaml:"TgUpdateLogMaxSize"` // 333
 	
 	TgCommandChannels string `yaml:"TgCommandChannels"`
@@ -84,7 +84,7 @@ type TgZeConfig struct {
 	TgQuest3 string `yaml:"TgQuest3"`
 	TgQuest3Key string `yaml:"TgQuest3Key"`
 	
-	TgAllChannelsChatIds []int64 `yaml:"TgAllChannelsChatIds"`
+	TgAllChannelsChatIds []int64 `yaml:"TgAllChannelsChatIds,flow"`
 	
 	TgMaxFileSizeBytes int64 `yaml:"TgMaxFileSizeBytes"` // 47 << 20
 	TgVideoAudioBitrateKbps int64 `yaml:"TgVideoAudioBitrateKbps"` // 60
